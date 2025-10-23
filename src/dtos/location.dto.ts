@@ -33,10 +33,10 @@ class IsPolygonCoordinatesConstraint implements ValidatorConstraintInterface {
 export class LocationDto {
     @IsString({ message: 'type must be a string' })
     @IsIn(['Polygon'], { message: "type must be 'Polygon'" })
-    readonly type: 'Polygon';
+    type: 'Polygon';
 
     @IsArray({ message: 'coordinates must be an array' })
     @ArrayNotEmpty({ message: 'coordinates must not be empty' })
     @Validate(IsPolygonCoordinatesConstraint)
-    readonly coordinates: any[]; // number[][][] (validated by custom constraint)
+    coordinates: any[]; // number[][][] (validated by custom constraint)
 }

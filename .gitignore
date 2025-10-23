@@ -13,3 +13,7 @@ logs
 npm-debug.log*
 # VSCode settings
 .vscode/
+# Testing
+coverage/
+*.lcov
+.nyc_output/

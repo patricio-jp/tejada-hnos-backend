@@ -5,38 +5,38 @@ import { LocationDto } from './location.dto';
 export class CreatePlotDto {
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  name: string;
 
   @IsNumber()
   @IsNotEmpty()
-  readonly area: number;
+  area: number;
 
   @IsString()
   @IsOptional()
-  readonly variety?: string;
+  variety?: string;
 
-  readonly fieldId: string;
+  fieldId: string;
 
   @ValidateNested()
   @Type(() => LocationDto)
-  readonly location: LocationDto;
+  location: LocationDto;
 }
 
 export class UpdatePlotDto {
   @IsString()
   @IsOptional()
-  readonly name?: string;
+  name?: string;
 
   @IsNumber()
   @IsOptional()
-  readonly area?: number;
+  area?: number;
 
   @IsString()
   @IsOptional()
-  readonly variety?: string;
+  variety?: string;
 
   @ValidateNested()
   @Type(() => LocationDto)
   @IsOptional()
-  readonly location?: LocationDto;
+  location?: LocationDto;
 }

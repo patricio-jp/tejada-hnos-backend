@@ -112,7 +112,56 @@ router.post("/admin-only", authenticate, authorize(UserRole.ADMIN), controller.m
 - `npm run build` — Compila TypeScript a `dist/`.
 - `npm start` — Ejecuta la build compilada desde `dist/`.
 - `npm run seed:admin` — Crea un usuario administrador inicial.
+- `npm test` — Ejecuta todos los tests con Jest.
+- `npm run test:watch` — Ejecuta tests en modo watch (auto-rerun).
+- `npm run test:coverage` — Genera reporte de cobertura de código.
+- `npm run test:verbose` — Ejecuta tests con salida detallada.
+
+## Testing 🧪
+
+Este proyecto incluye testing completo con Jest y TypeScript:
+
+- ✅ 31 tests automatizados funcionando
+- ✅ Cobertura de código configurada
+- ✅ Tests unitarios para utils, services y middlewares
+- ✅ Configuración completa con ts-jest
+- ✅ Soporte para mocks y spies
+
+### Ejecutar Tests
+
+```bash
+# Ejecutar todos los tests
+npm test
+
+# Modo watch (re-ejecuta al guardar cambios)
+npm run test:watch
+
+# Generar reporte de cobertura
+npm run test:coverage
+```
+
+### Documentación de Testing
+
+- [Guía Principal de Testing](docs/TESTING.md) - Introducción y comandos básicos
+- [Ejemplos y Plantillas](docs/TESTING_EXAMPLES.md) - Cómo escribir nuevos tests
+- [Configuración Avanzada](docs/TESTING_ADVANCED.md) - Tests E2E, CI/CD, etc.
+- [Resumen de Integración](docs/JEST_INTEGRATION_SUMMARY.md) - Estado actual
+- [Checklist de Verificación](docs/JEST_CHECKLIST.md) - Lista de verificación completa
+
+### Estructura de Tests
+
+```
+src/
+  utils/__tests__/
+    jwt.utils.test.ts          (9 tests ✅)
+    validation.utils.test.ts   (7 tests ✅)
+  services/__tests__/
+    auth.logic.test.ts         (9 tests ✅)
+  middlewares/__tests__/
+    middleware.test.ts         (6 tests ✅)
+```
 
 ## Notas
 
 - No incluyas el archivo `.env` en el repositorio. Usa `.env.example` como plantilla.
+- Los archivos de cobertura de tests (`coverage/`) están excluidos del repositorio.

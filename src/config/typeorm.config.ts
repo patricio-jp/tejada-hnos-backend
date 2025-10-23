@@ -1,9 +1,5 @@
 import { DataSource } from 'typeorm';
 import { ENV } from "@config/environment";
-import { User } from '@entities/user.entity';
-import { Field } from '@entities/field.entity';
-import { Plot } from '@entities/plot.entity';
-import { ActivityLog } from '@entities/activity-log.entity';
 
 /**
  * PostgreSQL DataSource configuration using TypeORM.
@@ -20,3 +16,37 @@ export const PostgreSQLDataSource = new DataSource({
     synchronize: true, // Set to false in production
     logging: true,
 });
+
+// Un segundo DataSource, que utilizaremos solo para testing:
+export const TestDataSource = new DataSource({
+    type: "sqlite",
+    database: ":memory:",
+    entities: ["src/entities/*.entity.ts"],
+    migrations: [],
+    subscribers: [],
+    logging: false,
+    synchronize: true, // ¡Importante para pruebas! Crea las tablas automáticamente
+});
+
+// Helper para inicializar y limpiar la DB en tests
+export const initializeTestDatabase = async () => {
+    if (!TestDataSource.isInitialized) {
+        await TestDataSource.initialize();
+    }
+    return TestDataSource;
+};
+
+export const cleanupTestDatabase = async () => {
+    if (TestDataSource.isInitialized) {
+        await TestDataSource.destroy();
+    }
+};
+
+// Helper para limpiar datos entre tests
+export const clearDatabase = async () => {
+    const entities = TestDataSource.entityMetadatas;
+    for (const entity of entities) {
+        const repository = TestDataSource.getRepository(entity.name);
+        await repository.clear();
+    }
+};

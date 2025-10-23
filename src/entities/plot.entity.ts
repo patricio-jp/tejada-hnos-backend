@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Field } from './field.entity';
+import { ENV } from '@/config/environment';
 
 @Entity('plots')
 export class Plot {
@@ -15,7 +16,7 @@ export class Plot {
   @Column({ nullable: true })
   variety: string;
   
-  @Column('jsonb')
+  @Column(ENV.NODE_ENV === 'test' ? 'simple-json' : 'jsonb')
   location: { type: 'Polygon', coordinates: number[][][] };
 
   @CreateDateColumn()

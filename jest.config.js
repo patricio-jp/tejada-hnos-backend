@@ -32,4 +32,8 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   verbose: true,
   testTimeout: 10000,
+  // Establecer NODE_ENV para los tests
+  testEnvironmentOptions: {
+    NODE_ENV: 'test',
+  },
 };

@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Up
 import { Plot } from './plot.entity';
 import { User } from './user.entity';
 import { ActivityType } from '@/enums';
+import { ENV } from '@/config/environment';
 
 @Entity('activity_logs')
 export class ActivityLog {
@@ -9,7 +10,7 @@ export class ActivityLog {
   id: string;
 
   @Column({
-    type: 'enum',
+    type: ENV.NODE_ENV === 'test' ? 'simple-enum' : 'enum',
     enum: ActivityType,
   })
   activityType: ActivityType;
@@ -17,7 +18,7 @@ export class ActivityLog {
   @Column('text')
   description: string;
   
-  @Column('timestamp')
+  @Column(ENV.NODE_ENV === 'test' ? 'datetime' : 'timestamp')
   executionDate: Date;
   
   @CreateDateColumn()

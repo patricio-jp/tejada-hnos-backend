@@ -1,6 +1,7 @@
 import { UserRole } from '@/enums';
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Field } from './field.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { ENV } from '@/config/environment';
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -16,7 +17,7 @@ export class User {
   lastName: string;
 
   @Column({
-    type: 'enum',
+    type: ENV.NODE_ENV === 'test' ? 'simple-enum' : 'enum',
     enum: UserRole,
     default: UserRole.OPERARIO,
   })

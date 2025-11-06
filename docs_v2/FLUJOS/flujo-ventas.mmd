@@ -1,0 +1,286 @@
+graph TB
+    Start([Cliente Interesado<br/>en Comprar])
+    
+    %% GESTIÓN DE CLIENTES
+    subgraph Clientes["👥 GESTIÓN DE CUSTOMERS"]
+        CUS1{Customer<br/>existe?}
+        CUS2[CAPATAZ/ADMIN<br/>consulta lista]
+        CUS3[CAPATAZ/ADMIN<br/>crea nuevo Customer]
+        CUS4[Datos:<br/>- name<br/>- taxId RUT/CUIT<br/>- address<br/>- contactEmail<br/>- phoneNumber]
+        CUS5[Guardar Customer]
+        
+        CUS1 -->|Sí| CUS2
+        CUS1 -->|No| CUS3
+        CUS3 --> CUS4
+        CUS4 --> CUS5
+    end
+    
+    %% VERIFICAR STOCK
+    subgraph Stock["📦 VERIFICAR STOCK DISPONIBLE"]
+        STK1[CAPATAZ consulta<br/>Harvest Lots]
+        STK2[GET /harvest-lots<br/>?status=EN_STOCK]
+        STK3[Filtrar por:<br/>- variety<br/>- caliber<br/>- cantidad disponible]
+        STK4[Mostrar lotes<br/>con trazabilidad:<br/>- lotCode<br/>- netWeightKg<br/>- harvestDate<br/>- plot/field origen]
+        STK5{Stock<br/>suficiente?}
+        STK6[Esperar más<br/>producción]
+        STK7[Proceder con<br/>Sales Order]
+        
+        STK1 --> STK2
+        STK2 --> STK3
+        STK3 --> STK4
+        STK4 --> STK5
+        STK5 -->|No| STK6
+        STK5 -->|Sí| STK7
+    end
+    
+    %% CREAR SALES ORDER
+    subgraph CrearSO["📝 CREAR SALES ORDER"]
+        SO1[CAPATAZ crea<br/>Sales Order]
+        SO2[Datos básicos:<br/>- customerId<br/>- estado: PENDIENTE]
+        SO3[Agregar líneas<br/>de detalle]
+        SO4[Por cada producto:<br/>Sales Order Detail]
+        SO5[Datos del detail:<br/>- variety nombre<br/>- caliber<br/>- quantityKg<br/>- unitPrice precio/kg]
+        SO6[Sistema calcula<br/>subtotal automático<br/>quantityKg × unitPrice]
+        SO7{Más<br/>productos?}
+        SO8[Sistema calcula<br/>total de orden<br/>Σ subtotales]
+        SO9[Estado initial:<br/>PENDIENTE<br/>quantityShipped: 0]
+        SO10[Guardar Sales Order<br/>con todos los Details]
+        SO11[Generar PDF/<br/>presupuesto]
+        SO12[Enviar a cliente<br/>para aprobación]
+        
+        SO1 --> SO2
+        SO2 --> SO3
+        SO3 --> SO4
+        SO4 --> SO5
+        SO5 --> SO6
+        SO6 --> SO7
+        SO7 -->|Sí| SO4
+        SO7 -->|No| SO8
+        SO8 --> SO9
+        SO9 --> SO10
+        SO10 --> SO11
+        SO11 --> SO12
+    end
+    
+    %% APROBACIÓN
+    subgraph Aprobacion["✅ APROBACIÓN"]
+        APR1[Cliente revisa<br/>presupuesto]
+        APR2{Cliente<br/>acepta?}
+        APR3[Negociar términos<br/>CAPATAZ edita SO]
+        APR4[Cliente confirma<br/>compra]
+        APR5[ADMIN aprueba<br/>Sales Order]
+        APR6[PATCH /:id/status<br/>status: APROBADA]
+        APR7[Reservar stock<br/>lógicamente]
+        APR8[Notificar a<br/>logística]
+        APR9[Cancelar orden<br/>status: CANCELADA]
+        
+        APR1 --> APR2
+        APR2 -->|No| APR3
+        APR2 -->|Rechaza| APR9
+        APR2 -->|Sí| APR4
+        APR3 --> APR1
+        APR4 --> APR5
+        APR5 --> APR6
+        APR6 --> APR7
+        APR7 --> APR8
+    end
+    
+    %% PREPARAR DESPACHO
+    subgraph PrepararDespacho["📋 PREPARAR SHIPMENT"]
+        PREP1[CAPATAZ crea<br/>Shipment]
+        PREP2[Datos:<br/>- salesOrderId<br/>- trackingNumber opcional<br/>- notes]
+        PREP3[Por cada<br/>Sales Order Detail]
+        PREP4{Cantidad<br/>pendiente?}
+        PREP5[Detail completo<br/>pasar al siguiente]
+        PREP6[Determinar cantidad<br/>a despachar ahora]
+        PREP7[Seleccionar<br/>Harvest Lots]
+        PREP8[Criterios selección:<br/>- Variedad coincide<br/>- Caliber coincide<br/>- Stock disponible<br/>- FIFO más antiguo]
+        PREP9[Crear Shipment<br/>Lot Detail]
+        PREP10[Datos:<br/>- shipmentId<br/>- harvestLotId<br/>- salesOrderDetailId<br/>- quantityTakenKg]
+        PREP11{Más lotes<br/>necesarios?}
+        PREP12{Más<br/>Details?}
+        PREP13[Guardar Shipment<br/>completo]
+        
+        PREP1 --> PREP2
+        PREP2 --> PREP3
+        PREP3 --> PREP4
+        PREP4 -->|No| PREP5
+        PREP4 -->|Sí| PREP6
+        PREP5 --> PREP12
+        PREP6 --> PREP7
+        PREP7 --> PREP8
+        PREP8 --> PREP9
+        PREP9 --> PREP10
+        PREP10 --> PREP11
+        PREP11 -->|Sí| PREP7
+        PREP11 -->|No| PREP12
+        PREP12 -->|Sí| PREP3
+        PREP12 -->|No| PREP13
+    end
+    
+    %% ACTUALIZACIÓN AUTOMÁTICA
+    subgraph Actualizacion["🔄 ACTUALIZACIÓN AUTOMÁTICA"]
+        UPD1[Sistema procesa<br/>Shipment creado]
+        UPD2[Por cada<br/>Shipment Lot Detail]
+        UPD3[Obtener Harvest Lot]
+        UPD4[Descontar stock:<br/>netWeightKg -= quantityTakenKg]
+        UPD5[Validar:<br/>netWeightKg >= 0]
+        UPD6{Lote<br/>agotado?}
+        UPD7[Harvest Lot<br/>status: VENDIDO]
+        UPD8[Mantener status:<br/>EN_STOCK]
+        UPD9[Obtener Sales<br/>Order Detail]
+        UPD10[Actualizar enviado:<br/>quantityShipped += quantityTakenKg]
+        UPD11{Detail<br/>completo?}
+        UPD12[Detail status:<br/>COMPLETA]
+        UPD13[Detail status:<br/>DESPACHADA_PARCIAL]
+        UPD14{Más<br/>Lot Details?}
+        UPD15[Verificar Sales Order<br/>completa]
+        UPD16{Todos<br/>Details<br/>completos?}
+        UPD17[SO status:<br/>DESPACHADA_TOTAL]
+        UPD18[SO status:<br/>DESPACHADA_PARCIAL]
+        
+        UPD1 --> UPD2
+        UPD2 --> UPD3
+        UPD3 --> UPD4
+        UPD4 --> UPD5
+        UPD5 --> UPD6
+        UPD6 -->|Sí| UPD7
+        UPD6 -->|No| UPD8
+        UPD7 --> UPD9
+        UPD8 --> UPD9
+        UPD9 --> UPD10
+        UPD10 --> UPD11
+        UPD11 -->|Sí| UPD12
+        UPD11 -->|No| UPD13
+        UPD12 --> UPD14
+        UPD13 --> UPD14
+        UPD14 -->|Sí| UPD2
+        UPD14 -->|No| UPD15
+        UPD15 --> UPD16
+        UPD16 -->|Sí| UPD17
+        UPD16 -->|No| UPD18
+    end
+    
+    %% DESPACHO FÍSICO
+    subgraph Despacho["🚚 DESPACHO FÍSICO"]
+        DSP1[Preparar mercadería<br/>según Shipment]
+        DSP2[Empacar producto<br/>por lote]
+        DSP3[Etiquetar con:<br/>- lotCode trazabilidad<br/>- variety<br/>- caliber<br/>- peso neto<br/>- cliente]
+        DSP4[Generar remito/<br/>factura]
+        DSP5[Cargar en transporte]
+        DSP6[Actualizar tracking<br/>si disponible]
+        DSP7[PATCH /shipments/:id<br/>trackingNumber]
+        DSP8[Enviar a cliente]
+        DSP9[Confirmar recepción<br/>del cliente]
+        
+        DSP1 --> DSP2
+        DSP2 --> DSP3
+        DSP3 --> DSP4
+        DSP4 --> DSP5
+        DSP5 --> DSP6
+        DSP6 --> DSP7
+        DSP7 --> DSP8
+        DSP8 --> DSP9
+    end
+    
+    %% CIERRE
+    subgraph Cierre["✔️ CIERRE Y PAGO"]
+        CIE1{Despacho<br/>parcial?}
+        CIE2[Crear otro<br/>Shipment]
+        CIE3[Registrar pago<br/>recibido]
+        CIE4[PATCH /:id/status<br/>status: PAGADA]
+        CIE5[Verificar todo<br/>despachado y pagado]
+        CIE6[PATCH /:id/status<br/>status: CERRADA]
+        CIE7[Sales Order<br/>archivada]
+        
+        CIE1 -->|Sí| CIE2
+        CIE1 -->|No| CIE3
+        CIE2 --> PREP1
+        CIE3 --> CIE4
+        CIE4 --> CIE5
+        CIE5 --> CIE6
+        CIE6 --> CIE7
+    end
+    
+    %% TRAZABILIDAD
+    subgraph Trazabilidad["🔍 TRAZABILIDAD COMPLETA"]
+        TRZ1[Cliente puede rastrear<br/>su producto]
+        TRZ2[Shipment → Shipment Lot Details]
+        TRZ3[Lot Detail → Harvest Lot]
+        TRZ4[Harvest Lot → Plot → Field]
+        TRZ5[Información completa:<br/>- Origen exacto parcela<br/>- Fecha de cosecha<br/>- Variedad<br/>- Calibre<br/>- Rendimiento<br/>- Capataz responsable]
+        TRZ6[Permite:<br/>- Certificaciones<br/>- Auditorías<br/>- Recall si necesario<br/>- Transparencia cliente]
+        
+        TRZ1 --> TRZ2
+        TRZ2 --> TRZ3
+        TRZ3 --> TRZ4
+        TRZ4 --> TRZ5
+        TRZ5 --> TRZ6
+    end
+    
+    %% CONSULTAS Y REPORTES
+    subgraph Reportes["📊 CONSULTAS Y REPORTES"]
+        REP1[GET /sales-orders<br/>Listar órdenes]
+        REP2[Filtros:<br/>- customerId<br/>- status<br/>- dateRange]
+        REP3[GET /sales-orders/:id<br/>Ver detalles completos]
+        REP4[Incluye:<br/>- Customer info<br/>- Details con cantidades<br/>- Shipments realizados<br/>- Stock pendiente]
+        REP5[GET /shipments<br/>Listar despachos]
+        REP6[GET /shipments/:id<br/>Ver trazabilidad]
+        REP7[Reportes útiles:<br/>- Ventas por cliente<br/>- Ventas por calibre<br/>- Stock vs comprometido<br/>- Revenue por período<br/>- Trazabilidad completa]
+        
+        REP1 --> REP2
+        REP2 --> REP3
+        REP3 --> REP4
+        REP5 --> REP6
+        REP6 --> REP7
+    end
+    
+    %% VALIDACIONES IMPORTANTES
+    subgraph Validaciones["✅ VALIDACIONES"]
+        VAL1[Sales Order:<br/>- Customer debe existir<br/>- Prices > 0<br/>- Quantities > 0]
+        VAL2[Shipment:<br/>- SO debe estar APROBADA<br/>- No enviar más de lo pedido<br/>- Harvest Lots deben tener stock]
+        VAL3[Shipment Lot Detail:<br/>- Variety debe coincidir<br/>- Caliber debe coincidir<br/>- quantityTakenKg <= netWeightKg<br/>- No superar quantity del Detail]
+        
+        VAL1 --> VAL2
+        VAL2 --> VAL3
+    end
+    
+    %% FLUJO PRINCIPAL
+    Start --> CUS1
+    CUS2 --> STK1
+    CUS5 --> STK1
+    STK7 --> SO1
+    SO12 --> APR1
+    APR8 --> PREP1
+    PREP13 --> UPD1
+    UPD17 --> DSP1
+    UPD18 --> DSP1
+    DSP9 --> CIE1
+    CIE7 --> End([Venta Completada<br/>Cliente Satisfecho])
+    
+    %% ESTILOS
+    classDef clienteStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef stockStyle fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef soStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef aprobacionStyle fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef prepararStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef actualizacionStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef despachoStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef cierreStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef trazaStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef reporteStyle fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef validacionStyle fill:#ede7f6,stroke:#4527a0,stroke-width:2px
+    classDef decisionStyle fill:#ffebee,stroke:#c62828,stroke-width:3px
+    
+    class CUS2,CUS3,CUS4,CUS5 clienteStyle
+    class STK1,STK2,STK3,STK4,STK6,STK7 stockStyle
+    class SO1,SO2,SO3,SO4,SO5,SO6,SO8,SO9,SO10,SO11,SO12 soStyle
+    class APR1,APR3,APR4,APR5,APR6,APR7,APR8,APR9 aprobacionStyle
+    class PREP1,PREP2,PREP3,PREP5,PREP6,PREP7,PREP8,PREP9,PREP10,PREP13 prepararStyle
+    class UPD1,UPD2,UPD3,UPD4,UPD5,UPD7,UPD8,UPD9,UPD10,UPD12,UPD13,UPD15,UPD17,UPD18 actualizacionStyle
+    class DSP1,DSP2,DSP3,DSP4,DSP5,DSP6,DSP7,DSP8,DSP9 despachoStyle
+    class CIE2,CIE3,CIE4,CIE5,CIE6,CIE7 cierreStyle
+    class TRZ1,TRZ2,TRZ3,TRZ4,TRZ5,TRZ6 trazaStyle
+    class REP1,REP2,REP3,REP4,REP5,REP6,REP7 reporteStyle
+    class VAL1,VAL2,VAL3 validacionStyle
+    class CUS1,STK5,SO7,APR2,PREP4,PREP11,PREP12,UPD6,UPD11,UPD14,UPD16,CIE1 decisionStyle

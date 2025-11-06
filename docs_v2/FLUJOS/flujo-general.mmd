@@ -1,0 +1,165 @@
+graph TB
+    Start([Inicio del Ciclo de Negocio])
+    
+    %% MÓDULO DE COMPRAS
+    subgraph Compras["🛒 MÓDULO DE COMPRAS"]
+        S1[Proveedor Registrado]
+        S2[CAPATAZ crea<br/>Purchase Order<br/>Estado: PENDIENTE]
+        S3{ADMIN<br/>Aprueba?}
+        S4[Estado: APROBADA]
+        S5[Llega Mercadería]
+        S6[CAPATAZ registra<br/>Goods Receipt]
+        S7[Actualizar Stock<br/>de Inputs]
+        S8{Recibido<br/>Completo?}
+        S9[Estado: RECIBIDA]
+        S10[Estado: RECIBIDA_PARCIAL]
+        S11[Estado: CERRADA]
+        
+        S1 --> S2
+        S2 --> S3
+        S3 -->|Sí| S4
+        S3 -->|No| S2
+        S4 --> S5
+        S5 --> S6
+        S6 --> S7
+        S7 --> S8
+        S8 -->|Sí| S9
+        S8 -->|No| S10
+        S10 --> S5
+        S9 --> S11
+    end
+    
+    %% MÓDULO DE PRODUCCIÓN
+    subgraph Produccion["🌱 MÓDULO DE PRODUCCIÓN"]
+        P1[ADMIN crea Field]
+        P2[Asigna CAPATAZ<br/>como Manager]
+        P3[CAPATAZ/ADMIN<br/>crea Plots en Field]
+        P4[Asigna Variety<br/>a Plot]
+        P5[Registra fecha<br/>de plantación]
+        
+        P1 --> P2
+        P2 --> P3
+        P3 --> P4
+        P4 --> P5
+    end
+    
+    %% MÓDULO DE OPERACIONES
+    subgraph Operaciones["⚙️ MÓDULO DE OPERACIONES"]
+        O1[CAPATAZ crea<br/>Work Order]
+        O2[Asigna a OPERARIO]
+        O3[Selecciona Plot/s]
+        O4[Estado: PENDING]
+        O5[OPERARIO acepta<br/>y comienza]
+        O6[Estado: IN_PROGRESS]
+        O7[OPERARIO registra<br/>Activity]
+        O8[Registra insumos<br/>usados InputUsage]
+        O9[Registra horas<br/>trabajadas]
+        O10[Activity Estado:<br/>PENDING]
+        O11{CAPATAZ<br/>Aprueba<br/>Activity?}
+        O12[Estado: APPROVED<br/>Descuenta stock]
+        O13[Estado: REJECTED]
+        O14{Work Order<br/>Completa?}
+        O15[OPERARIO marca<br/>Estado: COMPLETED]
+        
+        O1 --> O2
+        O2 --> O3
+        O3 --> O4
+        O4 --> O5
+        O5 --> O6
+        O6 --> O7
+        O7 --> O8
+        O8 --> O9
+        O9 --> O10
+        O10 --> O11
+        O11 -->|Sí| O12
+        O11 -->|No| O13
+        O12 --> O14
+        O13 --> O7
+        O14 -->|Sí| O15
+        O14 -->|No| O7
+    end
+    
+    %% MÓDULO DE COSECHA
+    subgraph Cosecha["🌾 MÓDULO DE COSECHA"]
+        H1[OPERARIO cosecha<br/>en Plot]
+        H2[CAPATAZ crea<br/>Harvest Lot]
+        H3[Registra peso bruto<br/>grossWeightKg]
+        H4[Genera lotCode<br/>único]
+        H5[Estado:<br/>PENDIENTE_PROCESO]
+        H6[Proceso de<br/>Secado/Separación]
+        H7[CAPATAZ actualiza<br/>netWeightKg]
+        H8[Asigna Caliber]
+        H9[Sistema calcula<br/>yieldPercentage]
+        H10[Estado: EN_STOCK]
+        
+        H1 --> H2
+        H2 --> H3
+        H3 --> H4
+        H4 --> H5
+        H5 --> H6
+        H6 --> H7
+        H7 --> H8
+        H8 --> H9
+        H9 --> H10
+    end
+    
+    %% MÓDULO DE VENTAS
+    subgraph Ventas["💰 MÓDULO DE VENTAS - PENDIENTE"]
+        V1[Cliente Registrado]
+        V2[CAPATAZ crea<br/>Sales Order]
+        V3[Agrega detalles:<br/>caliber, variety,<br/>quantity, price]
+        V4[Estado: PENDIENTE]
+        V5{ADMIN<br/>Aprueba?}
+        V6[Estado: APROBADA]
+        V7[CAPATAZ crea<br/>Shipment]
+        V8[Selecciona<br/>Harvest Lots]
+        V9[Crea Shipment<br/>Lot Details]
+        V10[Descuenta de<br/>netWeightKg]
+        V11[Actualiza<br/>quantityShipped]
+        V12{Orden<br/>Completa?}
+        V13[Estado:<br/>DESPACHADA_TOTAL]
+        V14[Estado:<br/>DESPACHADA_PARCIAL]
+        V15[Harvest Lot<br/>Estado: VENDIDO]
+        V16[Estado: CERRADA]
+        
+        V1 --> V2
+        V2 --> V3
+        V3 --> V4
+        V4 --> V5
+        V5 -->|Sí| V6
+        V5 -->|No| V2
+        V6 --> V7
+        V7 --> V8
+        V8 --> V9
+        V9 --> V10
+        V10 --> V11
+        V11 --> V12
+        V12 -->|Sí| V13
+        V12 -->|No| V14
+        V14 --> V7
+        V13 --> V15
+        V15 --> V16
+    end
+    
+    %% FLUJO PRINCIPAL
+    Start --> S1
+    S11 --> P1
+    P5 --> O1
+    O15 --> H1
+    H10 --> V1
+    V16 --> End([Fin del Ciclo])
+    
+    %% ESTILOS
+    classDef comprasStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef produccionStyle fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef operacionesStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef cosechaStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef ventasStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef decisionStyle fill:#ffebee,stroke:#c62828,stroke-width:2px
+    
+    class S1,S2,S4,S5,S6,S7,S9,S10,S11 comprasStyle
+    class P1,P2,P3,P4,P5 produccionStyle
+    class O1,O2,O3,O4,O5,O6,O7,O8,O9,O10,O12,O13,O15 operacionesStyle
+    class H1,H2,H3,H4,H5,H6,H7,H8,H9,H10 cosechaStyle
+    class V1,V2,V3,V4,V6,V7,V8,V9,V10,V11,V13,V14,V15,V16 ventasStyle
+    class S3,S8,O11,O14,V5,V12 decisionStyle

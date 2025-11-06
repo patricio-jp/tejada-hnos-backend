@@ -1,0 +1,246 @@
+graph TB
+    Start([Necesidad de Trabajo<br/>en Campo])
+    
+    %% CREACIÓN DE WORK ORDER
+    subgraph CrearWO["📋 CREAR WORK ORDER"]
+        WO1[CAPATAZ/ADMIN<br/>planifica trabajo]
+        WO2{Usuario es<br/>CAPATAZ?}
+        WO3[Verificar acceso<br/>a Plot/Field]
+        WO4{Tiene<br/>acceso?}
+        WO5[Error 403<br/>Sin permisos]
+        WO6[Datos de Work Order:<br/>- title<br/>- description<br/>- scheduledDate<br/>- dueDate]
+        WO7[Validar fechas:<br/>dueDate > scheduledDate]
+        WO8[Seleccionar Plot/s<br/>donde trabajar]
+        WO9[Relación Many-to-Many<br/>tabla: work_order_plots]
+        WO10{Asignar<br/>OPERARIO?}
+        WO11[Seleccionar User<br/>con role: OPERARIO]
+        WO12[assignedToId = user.id]
+        WO13[Sin asignar<br/>assignedToId = null]
+        WO14[Estado inicial:<br/>PENDING]
+        WO15[Guardar Work Order]
+        WO16[OPERARIO ve OT<br/>en su lista]
+        
+        WO1 --> WO2
+        WO2 -->|Sí| WO3
+        WO2 -->|No ADMIN| WO6
+        WO3 --> WO4
+        WO4 -->|No| WO5
+        WO4 -->|Sí| WO6
+        WO6 --> WO7
+        WO7 --> WO8
+        WO8 --> WO9
+        WO9 --> WO10
+        WO10 -->|Sí| WO11
+        WO10 -->|No| WO13
+        WO11 --> WO12
+        WO12 --> WO14
+        WO13 --> WO14
+        WO14 --> WO15
+        WO15 --> WO16
+    end
+    
+    %% EJECUCIÓN
+    subgraph Ejecucion["⚙️ EJECUCIÓN DEL TRABAJO"]
+        EXE1[OPERARIO revisa<br/>sus Work Orders]
+        EXE2[GET /work-orders<br/>?assignedToId=me]
+        EXE3[Selecciona Work Order<br/>a ejecutar]
+        EXE4[Verifica detalles:<br/>- Plots a trabajar<br/>- Descripción<br/>- Fecha programada]
+        EXE5[CAPATAZ actualiza<br/>estado si es necesario]
+        EXE6[Estado:<br/>IN_PROGRESS]
+        EXE7[OPERARIO va<br/>al campo]
+        EXE8[Realiza el trabajo<br/>en las parcelas]
+        
+        EXE1 --> EXE2
+        EXE2 --> EXE3
+        EXE3 --> EXE4
+        EXE4 --> EXE5
+        EXE5 --> EXE6
+        EXE6 --> EXE7
+        EXE7 --> EXE8
+    end
+    
+    %% REGISTRO DE ACTIVIDADES
+    subgraph Actividades["📝 REGISTRO DE ACTIVITIES"]
+        ACT1[OPERARIO registra<br/>lo realizado]
+        ACT2[Crea Activity<br/>para la Work Order]
+        ACT3[Datos básicos:<br/>- workOrderId<br/>- type tipo actividad<br/>- executionDate<br/>- hoursWorked]
+        ACT4[Tipos disponibles:<br/>PODA, RIEGO<br/>APLICACION, COSECHA<br/>MANTENIMIENTO<br/>MONITOREO, OTRO]
+        ACT5[Campo details JSONB<br/>información adicional]
+        ACT6[Ejemplo details:<br/>observations: texto<br/>weather: clima<br/>equipment: herramientas]
+        ACT7[Estado inicial:<br/>PENDING]
+        ACT8[Guardar Activity<br/>base]
+        
+        ACT1 --> ACT2
+        ACT2 --> ACT3
+        ACT3 --> ACT4
+        ACT4 --> ACT5
+        ACT5 --> ACT6
+        ACT6 --> ACT7
+        ACT7 --> ACT8
+    end
+    
+    %% REGISTRO DE INSUMOS
+    subgraph Insumos["🧪 REGISTRO DE INPUT USAGE"]
+        INP1{Se usaron<br/>insumos?}
+        INP2[Consultar stock<br/>disponible]
+        INP3[GET /inputs<br/>ver disponibilidad]
+        INP4[Por cada insumo<br/>utilizado]
+        INP5[Crear Input Usage]
+        INP6[Datos:<br/>- activityId<br/>- inputId<br/>- quantityUsed]
+        INP7{Stock<br/>suficiente?}
+        INP8[Advertencia:<br/>Stock insuficiente<br/>pero registrar igual]
+        INP9[Guardar Input Usage]
+        INP10{Más<br/>insumos?}
+        INP11[Activity completa<br/>con todos los detalles]
+        INP12[Sin insumos<br/>usados]
+        
+        INP1 -->|Sí| INP2
+        INP1 -->|No| INP12
+        INP2 --> INP3
+        INP3 --> INP4
+        INP4 --> INP5
+        INP5 --> INP6
+        INP6 --> INP7
+        INP7 -->|No| INP8
+        INP7 -->|Sí| INP9
+        INP8 --> INP9
+        INP9 --> INP10
+        INP10 -->|Sí| INP4
+        INP10 -->|No| INP11
+        INP12 --> INP11
+    end
+    
+    %% APROBACIÓN DE ACTIVIDADES
+    subgraph Aprobacion["✅ APROBACIÓN DE ACTIVITIES"]
+        APR1[CAPATAZ revisa<br/>Activities pendientes]
+        APR2[GET /activities<br/>?status=PENDING<br/>de sus campos]
+        APR3[Por cada Activity]
+        APR4[Verifica:<br/>- Horas razonables<br/>- Insumos coherentes<br/>- Descripción clara]
+        APR5{Aprobar?}
+        APR6[CAPATAZ rechaza<br/>con comentario]
+        APR7[PATCH /:id/status<br/>status: REJECTED<br/>notes: razón]
+        APR8[OPERARIO ve rechazo<br/>puede corregir]
+        APR9[PATCH /:id/status<br/>status: APPROVED]
+        APR10[Sistema procesa<br/>aprobación]
+        
+        APR1 --> APR2
+        APR2 --> APR3
+        APR3 --> APR4
+        APR4 --> APR5
+        APR5 -->|No| APR6
+        APR5 -->|Sí| APR9
+        APR6 --> APR7
+        APR7 --> APR8
+        APR9 --> APR10
+    end
+    
+    %% PROCESAMIENTO AUTOMÁTICO
+    subgraph Proceso["🔄 PROCESAMIENTO AL APROBAR"]
+        PRC1[Activity aprobada<br/>ejecutar cambios]
+        PRC2[Por cada Input Usage<br/>de la Activity]
+        PRC3[Obtener Input<br/>relacionado]
+        PRC4[Descontar stock:<br/>stock -= quantityUsed]
+        PRC5{Stock<br/>negativo?}
+        PRC6[Alerta:<br/>Stock insuficiente<br/>pero continuar]
+        PRC7[Actualizar Input]
+        PRC8{Más<br/>Input Usages?}
+        PRC9[Contabilizar horas:<br/>Activity.hoursWorked<br/>para reportes]
+        PRC10[Calcular costo:<br/>hoursWorked × User.hourlyRate]
+        PRC11[Activity procesada<br/>cambios aplicados]
+        
+        PRC1 --> PRC2
+        PRC2 --> PRC3
+        PRC3 --> PRC4
+        PRC4 --> PRC5
+        PRC5 -->|Sí| PRC6
+        PRC5 -->|No| PRC7
+        PRC6 --> PRC7
+        PRC7 --> PRC8
+        PRC8 -->|Sí| PRC2
+        PRC8 -->|No| PRC9
+        PRC9 --> PRC10
+        PRC10 --> PRC11
+    end
+    
+    %% COMPLETAR WORK ORDER
+    subgraph Completar["✔️ COMPLETAR WORK ORDER"]
+        CMP1{Todas las<br/>tareas<br/>hechas?}
+        CMP2[OPERARIO continúa<br/>registrando Activities]
+        CMP3[OPERARIO marca<br/>Work Order completa]
+        CMP4[PATCH /:id/status<br/>status: COMPLETED]
+        CMP5[Registrar<br/>completedDate = now]
+        CMP6[CAPATAZ revisa<br/>trabajo finalizado]
+        CMP7{Satisfactorio?}
+        CMP8[CAPATAZ reabre<br/>status: IN_PROGRESS]
+        CMP9[Work Order<br/>completada]
+        
+        CMP1 -->|No| CMP2
+        CMP1 -->|Sí| CMP3
+        CMP2 --> ACT1
+        CMP3 --> CMP4
+        CMP4 --> CMP5
+        CMP5 --> CMP6
+        CMP6 --> CMP7
+        CMP7 -->|No| CMP8
+        CMP7 -->|Sí| CMP9
+        CMP8 --> EXE7
+    end
+    
+    %% CANCELACIÓN
+    subgraph Cancelar["❌ CANCELACIÓN"]
+        CAN1[Razones para cancelar:<br/>- Clima adverso<br/>- Falta de insumos<br/>- Cambio de planes]
+        CAN2[CAPATAZ/ADMIN<br/>cancela Work Order]
+        CAN3[PATCH /:id/status<br/>status: CANCELLED]
+        CAN4[Activities quedan<br/>registradas<br/>cambios ya aplicados]
+        
+        CAN1 --> CAN2
+        CAN2 --> CAN3
+        CAN3 --> CAN4
+    end
+    
+    %% CONSULTAS Y REPORTES
+    subgraph Reportes["📊 CONSULTAS Y REPORTES"]
+        REP1[Work Orders:<br/>GET /work-orders<br/>filtros múltiples]
+        REP2[Filtros disponibles:<br/>- status<br/>- assignedToId<br/>- plotId<br/>- dateRange]
+        REP3[Autorización automática:<br/>ADMIN: todas<br/>CAPATAZ: sus campos<br/>OPERARIO: asignadas]
+        REP4[Activities:<br/>GET /activities<br/>o nested en WO]
+        REP5[Reportes útiles:<br/>- Horas por operario<br/>- Insumos por parcela<br/>- Costos por actividad<br/>- Timeline de trabajo]
+        
+        REP1 --> REP2
+        REP2 --> REP3
+        REP3 --> REP4
+        REP4 --> REP5
+    end
+    
+    %% FLUJO PRINCIPAL
+    Start --> WO1
+    WO16 --> EXE1
+    EXE8 --> ACT1
+    ACT8 --> INP1
+    INP11 --> APR1
+    APR10 --> PRC1
+    PRC11 --> CMP1
+    CMP9 --> End([Trabajo Completado<br/>Datos Registrados])
+    
+    %% ESTILOS
+    classDef woStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef ejecucionStyle fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef actividadStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef insumoStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef aprobacionStyle fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef procesoStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef completarStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef cancelarStyle fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef reporteStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef decisionStyle fill:#ffcdd2,stroke:#b71c1c,stroke-width:3px
+    
+    class WO1,WO3,WO5,WO6,WO7,WO8,WO9,WO11,WO12,WO13,WO14,WO15,WO16 woStyle
+    class EXE1,EXE2,EXE3,EXE4,EXE5,EXE6,EXE7,EXE8 ejecucionStyle
+    class ACT1,ACT2,ACT3,ACT4,ACT5,ACT6,ACT7,ACT8 actividadStyle
+    class INP2,INP3,INP4,INP5,INP6,INP8,INP9,INP11,INP12 insumoStyle
+    class APR1,APR2,APR3,APR4,APR6,APR7,APR8,APR9,APR10 aprobacionStyle
+    class PRC1,PRC2,PRC3,PRC4,PRC6,PRC7,PRC9,PRC10,PRC11 procesoStyle
+    class CMP2,CMP3,CMP4,CMP5,CMP6,CMP8,CMP9 completarStyle
+    class CAN1,CAN2,CAN3,CAN4 cancelarStyle
+    class REP1,REP2,REP3,REP4,REP5 reporteStyle
+    class WO2,WO4,WO10,INP1,INP7,INP10,APR5,PRC5,PRC8,CMP1,CMP7 decisionStyle

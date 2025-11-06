@@ -1,0 +1,289 @@
+erDiagram
+    %% ============================================================================
+    %% MÓDULO DE USUARIOS Y AUTENTICACIÓN
+    %% ============================================================================
+    
+    USERS {
+        uuid id PK
+        varchar email UK "UNIQUE, NOT NULL"
+        varchar name "NOT NULL"
+        varchar last_name "NOT NULL"
+        enum role "ADMIN|CAPATAZ|OPERARIO, DEFAULT: OPERARIO"
+        varchar password_hash "NOT NULL, SELECT: false"
+        decimal hourly_rate "Costo por hora, DEFAULT: 0"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "Soft delete"
+    }
+    
+    %% ============================================================================
+    %% MÓDULO DE PRODUCCIÓN AGRÍCOLA
+    %% ============================================================================
+    
+    VARIETIES {
+        uuid id PK
+        varchar name UK "UNIQUE, NOT NULL"
+        text description "Características de la variedad"
+    }
+    
+    FIELDS {
+        uuid id PK
+        varchar name "NOT NULL"
+        decimal area "Hectáreas, NOT NULL"
+        varchar address "NOT NULL"
+        jsonb location "GeoJSON Polygon, NOT NULL"
+        uuid manager_id FK "Nullable, CAPATAZ asignado"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    PLOTS {
+        uuid id PK
+        varchar name "NOT NULL"
+        decimal area "Hectáreas, NOT NULL"
+        uuid field_id FK "NOT NULL"
+        uuid variety_id FK "Nullable"
+        date date_planted "Fecha de plantación, Nullable"
+        jsonb location "GeoJSON Polygon, NOT NULL"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    HARVEST_LOTS {
+        uuid id PK
+        uuid plot_id FK "NOT NULL"
+        date harvest_date "NOT NULL"
+        varchar lot_code "Código único, NOT NULL"
+        varchar variety_name "Snapshot histórico, NOT NULL"
+        enum caliber "JUMBO|LARGE|MEDIUM|SMALL|HALVES|PIECES, Nullable"
+        decimal gross_weight_kg "Peso bruto húmedo, NOT NULL"
+        decimal net_weight_kg "Peso neto seco, Nullable"
+        decimal yield_percentage "Rendimiento calculado, Nullable"
+        enum status "PENDIENTE_PROCESO|EN_STOCK|VENDIDO, DEFAULT: PENDIENTE_PROCESO"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    %% ============================================================================
+    %% MÓDULO DE OPERACIONES Y TRABAJO
+    %% ============================================================================
+    
+    WORK_ORDERS {
+        uuid id PK
+        varchar title "NOT NULL"
+        text description "NOT NULL"
+        timestamp scheduled_date "Fecha programada, NOT NULL"
+        timestamp due_date "Fecha límite, NOT NULL"
+        timestamp completed_date "Nullable"
+        enum status "PENDING|IN_PROGRESS|COMPLETED|CANCELLED, DEFAULT: PENDING"
+        uuid assigned_to_id FK "OPERARIO asignado, Nullable"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    WORK_ORDER_PLOTS {
+        uuid work_order_id FK "PK, NOT NULL"
+        uuid plot_id FK "PK, NOT NULL"
+    }
+    
+    ACTIVITIES {
+        uuid id PK
+        uuid work_order_id FK "NOT NULL"
+        enum type "PODA|RIEGO|APLICACION|COSECHA|MANTENIMIENTO|MONITOREO|OTRO, NOT NULL"
+        enum status "PENDING|APPROVED|REJECTED, DEFAULT: PENDING"
+        timestamp execution_date "NOT NULL"
+        decimal hours_worked "DEFAULT: 0"
+        jsonb details "Información adicional, DEFAULT: {}"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    %% ============================================================================
+    %% MÓDULO DE INSUMOS
+    %% ============================================================================
+    
+    INPUTS {
+        uuid id PK
+        varchar name UK "UNIQUE, NOT NULL"
+        enum unit "KG|LITRO|UNIDAD, NOT NULL"
+        decimal stock "Cantidad actual, DEFAULT: 0"
+        decimal cost_per_unit "Precio promedio, DEFAULT: 0"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    INPUT_USAGES {
+        uuid id PK
+        uuid activity_id FK "NOT NULL"
+        uuid input_id FK "NOT NULL"
+        decimal quantity_used "NOT NULL"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    %% ============================================================================
+    %% MÓDULO DE COMPRAS
+    %% ============================================================================
+    
+    SUPPLIERS {
+        uuid id PK
+        varchar name "NOT NULL"
+        varchar tax_id "RUT/CUIT, Nullable"
+        varchar address "Nullable"
+        varchar contact_email "Nullable"
+        varchar phone_number "Nullable"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    PURCHASE_ORDERS {
+        uuid id PK
+        uuid supplier_id FK "NOT NULL"
+        enum status "PENDIENTE|APROBADA|RECIBIDA_PARCIAL|RECIBIDA|CERRADA|CANCELADA, DEFAULT: PENDIENTE"
+        decimal total_amount "Calculado automáticamente, NOT NULL"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    PURCHASE_ORDER_DETAILS {
+        uuid id PK
+        uuid purchase_order_id FK "NOT NULL"
+        uuid input_id FK "NOT NULL"
+        decimal quantity "Cantidad pedida, NOT NULL"
+        decimal unit_price "Precio de compra, NOT NULL"
+    }
+    
+    GOODS_RECEIPTS {
+        uuid id PK
+        uuid purchase_order_id FK "NOT NULL"
+        uuid received_by_id FK "Usuario que recibió, NOT NULL"
+        timestamp received_at "DEFAULT: NOW()"
+        text notes "Observaciones generales, Nullable"
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    GOODS_RECEIPT_DETAILS {
+        uuid id PK
+        uuid goods_receipt_id FK "NOT NULL"
+        uuid purchase_order_detail_id FK "NOT NULL"
+        decimal quantity_received "Cantidad recibida, NOT NULL"
+        text notes "Notas específicas del ítem, Nullable"
+    }
+    
+    %% ============================================================================
+    %% MÓDULO DE VENTAS
+    %% ============================================================================
+    
+    CUSTOMERS {
+        uuid id PK
+        varchar name "NOT NULL"
+        varchar tax_id "RUT/CUIT, Nullable"
+        varchar address "Nullable"
+        varchar contact_email "Nullable"
+        varchar phone_number "Nullable"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    SALES_ORDERS {
+        uuid id PK
+        uuid customer_id FK "NOT NULL"
+        enum status "PENDIENTE|APROBADA|DESPACHADA_PARCIAL|DESPACHADA_TOTAL|PAGADA|CERRADA|CANCELADA, DEFAULT: PENDIENTE"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    SALES_ORDER_DETAILS {
+        uuid id PK
+        uuid sales_order_id FK "NOT NULL"
+        varchar caliber "NOT NULL"
+        varchar variety "NOT NULL"
+        decimal unit_price "Precio por kg, NOT NULL"
+        decimal quantity_kg "Cantidad total, NOT NULL"
+        decimal quantity_shipped "Cantidad ya enviada, DEFAULT: 0"
+        enum status "PENDIENTE|DESPACHADA_PARCIAL|COMPLETA, DEFAULT: PENDIENTE"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    SHIPMENTS {
+        uuid id PK
+        uuid sales_order_id FK "NOT NULL"
+        varchar tracking_number "Nullable"
+        text notes "Observaciones, Nullable"
+        timestamp shipment_date "DEFAULT: NOW()"
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    SHIPMENT_LOT_DETAILS {
+        uuid id PK
+        uuid shipment_id FK "NOT NULL"
+        uuid harvest_lot_id FK "NOT NULL"
+        uuid sales_order_detail_id FK "NOT NULL"
+        decimal quantity_taken_kg "Cantidad del lote, NOT NULL"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    %% ============================================================================
+    %% RELACIONES - MÓDULO DE USUARIOS
+    %% ============================================================================
+    
+    USERS ||--o{ FIELDS : "manages (CAPATAZ)"
+    USERS ||--o{ WORK_ORDERS : "assigned_to (OPERARIO)"
+    USERS ||--o{ GOODS_RECEIPTS : "received_by"
+    
+    %% ============================================================================
+    %% RELACIONES - MÓDULO DE PRODUCCIÓN
+    %% ============================================================================
+    
+    FIELDS ||--o{ PLOTS : "contains"
+    VARIETIES ||--o{ PLOTS : "cultivated_in"
+    PLOTS ||--o{ HARVEST_LOTS : "produces"
+    
+    %% ============================================================================
+    %% RELACIONES - MÓDULO DE OPERACIONES
+    %% ============================================================================
+    
+    WORK_ORDERS ||--o{ WORK_ORDER_PLOTS : "assigned_to"
+    PLOTS ||--o{ WORK_ORDER_PLOTS : "has_work"
+    WORK_ORDERS ||--o{ ACTIVITIES : "contains"
+    ACTIVITIES ||--o{ INPUT_USAGES : "uses"
+    INPUTS ||--o{ INPUT_USAGES : "consumed_in"
+    
+    %% ============================================================================
+    %% RELACIONES - MÓDULO DE COMPRAS
+    %% ============================================================================
+    
+    SUPPLIERS ||--o{ PURCHASE_ORDERS : "supplies"
+    PURCHASE_ORDERS ||--o{ PURCHASE_ORDER_DETAILS : "contains"
+    INPUTS ||--o{ PURCHASE_ORDER_DETAILS : "ordered"
+    PURCHASE_ORDERS ||--o{ GOODS_RECEIPTS : "received_as"
+    GOODS_RECEIPTS ||--o{ GOODS_RECEIPT_DETAILS : "contains"
+    PURCHASE_ORDER_DETAILS ||--o{ GOODS_RECEIPT_DETAILS : "received_in"
+    
+    %% ============================================================================
+    %% RELACIONES - MÓDULO DE VENTAS
+    %% ============================================================================
+    
+    CUSTOMERS ||--o{ SALES_ORDERS : "places"
+    SALES_ORDERS ||--o{ SALES_ORDER_DETAILS : "contains"
+    SALES_ORDERS ||--o{ SHIPMENTS : "shipped_as"
+    SHIPMENTS ||--o{ SHIPMENT_LOT_DETAILS : "contains"
+    HARVEST_LOTS ||--o{ SHIPMENT_LOT_DETAILS : "shipped_in"
+    SALES_ORDER_DETAILS ||--o{ SHIPMENT_LOT_DETAILS : "fulfilled_by"

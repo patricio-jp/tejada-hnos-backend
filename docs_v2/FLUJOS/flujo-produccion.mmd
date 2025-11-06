@@ -1,0 +1,210 @@
+graph TB
+    Start([Inicio Gestión de Producción])
+    
+    %% SETUP INICIAL
+    subgraph Setup["🏗️ CONFIGURACIÓN INICIAL"]
+        SET1[ADMIN crea<br/>Varieties del catálogo]
+        SET2[Ejemplos:<br/>- Chandler<br/>- Serr<br/>- Hartley<br/>- Franquette]
+        SET3[Datos por Variety:<br/>- name único<br/>- description<br/>características]
+        
+        SET1 --> SET2
+        SET2 --> SET3
+    end
+    
+    %% GESTIÓN DE CAMPOS
+    subgraph Campos["🌍 GESTIÓN DE FIELDS"]
+        FLD1[ADMIN crea Field<br/>nuevo predio]
+        FLD2[Datos requeridos:<br/>- name<br/>- area hectáreas<br/>- address<br/>- location GeoJSON]
+        FLD3[GeoJSON Polygon:<br/>type: Polygon<br/>coordinates: lnglat]
+        FLD4{Asignar<br/>Manager<br/>CAPATAZ?}
+        FLD5[Seleccionar User<br/>con role: CAPATAZ]
+        FLD6[Field.managerId = user.id]
+        FLD7[Field sin manager<br/>managerId = null]
+        FLD8[Guardar Field]
+        FLD9[CAPATAZ puede ver<br/>su Field en lista]
+        
+        FLD1 --> FLD2
+        FLD2 --> FLD3
+        FLD3 --> FLD4
+        FLD4 -->|Sí| FLD5
+        FLD4 -->|No| FLD7
+        FLD5 --> FLD6
+        FLD6 --> FLD8
+        FLD7 --> FLD8
+        FLD8 --> FLD9
+    end
+    
+    %% GESTIÓN DE PARCELAS
+    subgraph Parcelas["📐 GESTIÓN DE PLOTS"]
+        PLT1[CAPATAZ/ADMIN<br/>crea Plot en Field]
+        PLT2{Usuario es<br/>CAPATAZ?}
+        PLT3[Verificar que<br/>Field.managerId = user.id]
+        PLT4{Tiene<br/>acceso?}
+        PLT5[Error 403<br/>Sin permisos]
+        PLT6[Datos de Plot:<br/>- name<br/>- area hectáreas<br/>- fieldId<br/>- location GeoJSON]
+        PLT7[Validación:<br/>Plot.area ≤ Field.area<br/>Polygon dentro de Field]
+        PLT8{Asignar<br/>Variety?}
+        PLT9[Seleccionar Variety<br/>del catálogo]
+        PLT10[Plot.varietyId = variety.id]
+        PLT11[Registrar datePlanted<br/>fecha de plantación]
+        PLT12[Plot sin variety<br/>varietyId = null]
+        PLT13[Guardar Plot]
+        PLT14[Plot visible para:<br/>- ADMIN todos<br/>- CAPATAZ de su field<br/>- OPERARIO donde trabaja]
+        
+        PLT1 --> PLT2
+        PLT2 -->|Sí| PLT3
+        PLT2 -->|No ADMIN| PLT6
+        PLT3 --> PLT4
+        PLT4 -->|No| PLT5
+        PLT4 -->|Sí| PLT6
+        PLT6 --> PLT7
+        PLT7 --> PLT8
+        PLT8 -->|Sí| PLT9
+        PLT8 -->|No| PLT12
+        PLT9 --> PLT10
+        PLT10 --> PLT11
+        PLT11 --> PLT13
+        PLT12 --> PLT13
+        PLT13 --> PLT14
+    end
+    
+    %% GESTIÓN DE LOTES DE COSECHA
+    subgraph Cosecha["🌾 GESTIÓN DE HARVEST LOTS"]
+        HRV1[Momento de<br/>la cosecha]
+        HRV2[CAPATAZ crea<br/>Harvest Lot]
+        HRV3[Selecciona Plot<br/>origen]
+        HRV4{Plot tiene<br/>variety?}
+        HRV5[Error:<br/>Plot debe tener variety]
+        HRV6[Datos iniciales:<br/>- plotId<br/>- harvestDate<br/>- grossWeightKg peso bruto]
+        HRV7[Sistema genera<br/>lotCode único<br/>ej: PLOT001-2025-001]
+        HRV8[Snapshot de variety:<br/>varietyName = plot.variety.name<br/>dato histórico]
+        HRV9[Estado inicial:<br/>PENDIENTE_PROCESO]
+        HRV10[Campos opcionales null:<br/>- caliber<br/>- netWeightKg<br/>- yieldPercentage]
+        HRV11[Guardar Harvest Lot]
+        HRV12[Lote en proceso<br/>de secado]
+        
+        HRV1 --> HRV2
+        HRV2 --> HRV3
+        HRV3 --> HRV4
+        HRV4 -->|No| HRV5
+        HRV4 -->|Sí| HRV6
+        HRV6 --> HRV7
+        HRV7 --> HRV8
+        HRV8 --> HRV9
+        HRV9 --> HRV10
+        HRV10 --> HRV11
+        HRV11 --> HRV12
+    end
+    
+    %% PROCESAMIENTO
+    subgraph Proceso["⚙️ PROCESAMIENTO Y CLASIFICACIÓN"]
+        PRC1[Secado completo<br/>en planta]
+        PRC2[Separación y<br/>clasificación por calibre]
+        PRC3[CAPATAZ actualiza<br/>Harvest Lot]
+        PRC4[Registra netWeightKg<br/>peso seco final]
+        PRC5[Asigna caliber:<br/>- JUMBO<br/>- LARGE<br/>- MEDIUM<br/>- SMALL<br/>- HALVES<br/>- PIECES]
+        PRC6[Sistema calcula<br/>yieldPercentage automático]
+        PRC7[Formula:<br/>netWeightKg ÷ grossWeightKg × 100]
+        PRC8[Ejemplo:<br/>800kg ÷ 1000kg × 100 = 80%]
+        PRC9[Actualizar estado:<br/>EN_STOCK]
+        PRC10[Lote listo<br/>para venta]
+        
+        PRC1 --> PRC2
+        PRC2 --> PRC3
+        PRC3 --> PRC4
+        PRC4 --> PRC5
+        PRC5 --> PRC6
+        PRC6 --> PRC7
+        PRC7 --> PRC8
+        PRC8 --> PRC9
+        PRC9 --> PRC10
+    end
+    
+    %% TRAZABILIDAD
+    subgraph Trazabilidad["🔍 TRAZABILIDAD"]
+        TRZ1[Harvest Lot permite<br/>trazabilidad completa]
+        TRZ2[De Lote a origen:<br/>lotCode → Plot → Field]
+        TRZ3[Información incluye:<br/>- Parcela exacta<br/>- Variedad<br/>- Fecha cosecha<br/>- Rendimiento<br/>- Calibre]
+        TRZ4[Para ventas futuras:<br/>Cliente puede rastrear<br/>hasta la parcela]
+        
+        TRZ1 --> TRZ2
+        TRZ2 --> TRZ3
+        TRZ3 --> TRZ4
+    end
+    
+    %% CONSULTAS Y REPORTES
+    subgraph Reportes["📊 CONSULTAS Y REPORTES"]
+        REP1[GET /fields<br/>Listar campos]
+        REP2[Filtros CAPATAZ:<br/>managerId = currentUser.id]
+        REP3[GET /fields/:id<br/>Ver detalles + plots]
+        REP4[GET /plots<br/>Listar parcelas]
+        REP5[Filtros disponibles:<br/>- fieldId<br/>- varietyId<br/>- datePlanted]
+        REP6[GET /plots/:id<br/>Ver detalles completos]
+        REP7[GET /harvest-lots<br/>Listar lotes de cosecha]
+        REP8[Filtros:<br/>- plotId<br/>- status<br/>- harvestDate<br/>- caliber]
+        REP9[GET /harvest-lots/:id<br/>Ver trazabilidad completa]
+        REP10[Reportes útiles:<br/>- Stock por calibre<br/>- Rendimiento por parcela<br/>- Producción por variedad<br/>- Timeline de cosechas]
+        
+        REP1 --> REP2
+        REP2 --> REP3
+        REP4 --> REP5
+        REP5 --> REP6
+        REP7 --> REP8
+        REP8 --> REP9
+        REP9 --> REP10
+    end
+    
+    %% ACTUALIZACIÓN Y MANTENIMIENTO
+    subgraph Mantenimiento["🔧 MANTENIMIENTO"]
+        MNT1[Actualizar Field:<br/>- Cambiar manager<br/>- Actualizar ubicación<br/>- Modificar área]
+        MNT2[Actualizar Plot:<br/>- Cambiar variety<br/>- Ajustar área<br/>- Actualizar ubicación]
+        MNT3[Reasignar variety:<br/>Cuando se replanta]
+        MNT4[Soft delete:<br/>Field/Plot no se borran<br/>solo deletedAt]
+        MNT5[Harvest Lots<br/>permanecen para trazabilidad]
+        
+        MNT1 --> MNT2
+        MNT2 --> MNT3
+        MNT3 --> MNT4
+        MNT4 --> MNT5
+    end
+    
+    %% VALIDACIONES IMPORTANTES
+    subgraph Validaciones["✅ VALIDACIONES"]
+        VAL1[Field:<br/>- Polygon GeoJSON válido<br/>- Area > 0<br/>- Manager debe ser CAPATAZ]
+        VAL2[Plot:<br/>- Debe pertenecer a un Field<br/>- Area ≤ Field.area<br/>- Polygon dentro de Field<br/>- Variety opcional]
+        VAL3[Harvest Lot:<br/>- Plot debe tener variety<br/>- grossWeightKg > 0<br/>- netWeightKg ≤ grossWeightKg<br/>- lotCode único]
+        
+        VAL1 --> VAL2
+        VAL2 --> VAL3
+    end
+    
+    %% FLUJO PRINCIPAL
+    Start --> SET1
+    SET3 --> FLD1
+    FLD9 --> PLT1
+    PLT14 --> HRV1
+    HRV12 --> PRC1
+    PRC10 --> End([Stock Disponible<br/>para Venta])
+    
+    %% ESTILOS
+    classDef setupStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef campoStyle fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef parcelaStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef cosechaStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef procesoStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef trazaStyle fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef reporteStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef mantenimientoStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef validacionStyle fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef decisionStyle fill:#ffebee,stroke:#c62828,stroke-width:3px
+    
+    class SET1,SET2,SET3 setupStyle
+    class FLD1,FLD2,FLD3,FLD5,FLD6,FLD7,FLD8,FLD9 campoStyle
+    class PLT1,PLT3,PLT6,PLT7,PLT9,PLT10,PLT11,PLT12,PLT13,PLT14 parcelaStyle
+    class HRV1,HRV2,HRV3,HRV5,HRV6,HRV7,HRV8,HRV9,HRV10,HRV11,HRV12 cosechaStyle
+    class PRC1,PRC2,PRC3,PRC4,PRC5,PRC6,PRC7,PRC8,PRC9,PRC10 procesoStyle
+    class TRZ1,TRZ2,TRZ3,TRZ4 trazaStyle
+    class REP1,REP2,REP3,REP4,REP5,REP6,REP7,REP8,REP9,REP10 reporteStyle
+    class MNT1,MNT2,MNT3,MNT4,MNT5 mantenimientoStyle
+    class VAL1,VAL2,VAL3 validacionStyle
+    class FLD4,PLT2,PLT4,PLT8,HRV4 decisionStyle

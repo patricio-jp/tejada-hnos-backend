@@ -1,0 +1,197 @@
+graph TB
+    Start([Necesidad de Insumos])
+    
+    %% GESTIÓN DE PROVEEDORES
+    subgraph Proveedores["👥 GESTIÓN DE PROVEEDORES"]
+        SUP1{Proveedor<br/>existe?}
+        SUP2[CAPATAZ/ADMIN<br/>Consulta lista de<br/>proveedores]
+        SUP3[CAPATAZ/ADMIN<br/>Crea nuevo Supplier]
+        SUP4[Datos:<br/>- name<br/>- taxId<br/>- contactEmail<br/>- phoneNumber<br/>- address]
+        SUP5[Guardar en BD]
+        
+        SUP1 -->|No| SUP3
+        SUP1 -->|Sí| SUP2
+        SUP3 --> SUP4
+        SUP4 --> SUP5
+    end
+    
+    %% CREACIÓN DE ORDEN DE COMPRA
+    subgraph CrearPO["📝 CREAR PURCHASE ORDER"]
+        PO1[CAPATAZ selecciona<br/>Supplier]
+        PO2[Agrega líneas de<br/>detalle]
+        PO3[Por cada insumo:<br/>Purchase Order Detail]
+        PO4[Selecciona Input<br/>del catálogo]
+        PO5{Input<br/>existe?}
+        PO6[ADMIN crea<br/>nuevo Input]
+        PO7[Define:<br/>- name<br/>- unit KG/LITRO/UNIDAD<br/>- costPerUnit inicial]
+        PO8[Especifica:<br/>- quantity<br/>- unitPrice]
+        PO9[Sistema calcula<br/>subtotal automático<br/>quantity × unitPrice]
+        PO10{Más<br/>insumos?}
+        PO11[Sistema calcula<br/>totalAmount<br/>Σ subtotales]
+        PO12[Estado: PENDIENTE]
+        PO13[Guardar Purchase Order<br/>con todos los Details]
+        
+        PO1 --> PO2
+        PO2 --> PO3
+        PO3 --> PO4
+        PO4 --> PO5
+        PO5 -->|No| PO6
+        PO5 -->|Sí| PO8
+        PO6 --> PO7
+        PO7 --> PO8
+        PO8 --> PO9
+        PO9 --> PO10
+        PO10 -->|Sí| PO3
+        PO10 -->|No| PO11
+        PO11 --> PO12
+        PO12 --> PO13
+    end
+    
+    %% APROBACIÓN
+    subgraph Aprobacion["✅ APROBACIÓN"]
+        APR1[ADMIN revisa<br/>Purchase Order]
+        APR2[Verifica:<br/>- Proveedor confiable<br/>- Precios razonables<br/>- Cantidades correctas<br/>- Presupuesto disponible]
+        APR3{Aprobar?}
+        APR4[ADMIN rechaza/<br/>solicita cambios]
+        APR5[CAPATAZ edita<br/>Purchase Order]
+        APR6[ADMIN ejecuta<br/>PATCH /purchase-orders/:id/status]
+        APR7[Estado: APROBADA]
+        APR8[Notificar a proveedor<br/>email/teléfono]
+        
+        APR1 --> APR2
+        APR2 --> APR3
+        APR3 -->|No| APR4
+        APR3 -->|Sí| APR6
+        APR4 --> APR5
+        APR5 --> APR1
+        APR6 --> APR7
+        APR7 --> APR8
+    end
+    
+    %% RECEPCIÓN DE MERCADERÍA
+    subgraph Recepcion["📦 RECEPCIÓN DE MERCADERÍA"]
+        REC1[Llega mercadería<br/>del proveedor]
+        REC2[CAPATAZ verifica<br/>contra Purchase Order]
+        REC3[Crea Goods Receipt]
+        REC4[Datos:<br/>- purchaseOrderId<br/>- receivedAt fecha/hora<br/>- receivedById usuario<br/>- notes observaciones]
+        REC5[Por cada insumo<br/>recibido]
+        REC6[Crea Goods Receipt<br/>Detail]
+        REC7[Datos:<br/>- purchaseOrderDetailId<br/>- quantityReceived<br/>- notes específicas]
+        REC8{Cantidad<br/>correcta?}
+        REC9[Registra diferencia<br/>en notes]
+        REC10{Calidad<br/>aceptable?}
+        REC11[Registra problema<br/>en notes]
+        REC12{Más<br/>insumos<br/>en envío?}
+        REC13[Guardar Goods Receipt<br/>con todos los Details]
+        
+        REC1 --> REC2
+        REC2 --> REC3
+        REC3 --> REC4
+        REC4 --> REC5
+        REC5 --> REC6
+        REC6 --> REC7
+        REC7 --> REC8
+        REC8 -->|No| REC9
+        REC8 -->|Sí| REC10
+        REC9 --> REC10
+        REC10 -->|No| REC11
+        REC10 -->|Sí| REC12
+        REC11 --> REC12
+        REC12 -->|Sí| REC5
+        REC12 -->|No| REC13
+    end
+    
+    %% ACTUALIZACIÓN AUTOMÁTICA
+    subgraph Actualizacion["🔄 ACTUALIZACIÓN AUTOMÁTICA"]
+        UPD1[Sistema procesa<br/>Goods Receipt]
+        UPD2[Por cada Receipt Detail]
+        UPD3[Obtener Input<br/>relacionado]
+        UPD4[Calcular nuevo stock<br/>stock += quantityReceived]
+        UPD5[Actualizar costPerUnit<br/>promedio ponderado]
+        UPD6[Formula:<br/>newCost = total_cost ÷ total_quantity]
+        UPD7[Guardar Input<br/>actualizado]
+        UPD8{Más<br/>details?}
+        UPD9[Calcular cantidades<br/>por Purchase Order Detail]
+        UPD10[quantityReceived =<br/>Σ Receipt Details]
+        UPD11[quantityPending =<br/>quantity - quantityReceived]
+        UPD12{Todos los<br/>details<br/>completos?}
+        UPD13[Estado PO:<br/>RECIBIDA]
+        UPD14{Algún<br/>detail<br/>recibido?}
+        UPD15[Estado PO:<br/>RECIBIDA_PARCIAL]
+        UPD16[Estado PO:<br/>sin cambios APROBADA]
+        
+        UPD1 --> UPD2
+        UPD2 --> UPD3
+        UPD3 --> UPD4
+        UPD4 --> UPD5
+        UPD5 --> UPD6
+        UPD6 --> UPD7
+        UPD7 --> UPD8
+        UPD8 -->|Sí| UPD2
+        UPD8 -->|No| UPD9
+        UPD9 --> UPD10
+        UPD10 --> UPD11
+        UPD11 --> UPD12
+        UPD12 -->|Sí| UPD13
+        UPD12 -->|No| UPD14
+        UPD14 -->|Sí| UPD15
+        UPD14 -->|No| UPD16
+    end
+    
+    %% CIERRE
+    subgraph Cierre["✔️ CIERRE"]
+        CIE1{Recepción<br/>completa?}
+        CIE2[Esperar más<br/>envíos]
+        CIE3[ADMIN/CAPATAZ<br/>verifica todo OK]
+        CIE4[Actualiza estado<br/>RECIBIDA → CERRADA]
+        CIE5[Purchase Order<br/>archivada]
+        
+        CIE1 -->|No| CIE2
+        CIE1 -->|Sí| CIE3
+        CIE2 --> REC1
+        CIE3 --> CIE4
+        CIE4 --> CIE5
+    end
+    
+    %% FLUJO PRINCIPAL
+    Start --> SUP1
+    SUP2 --> PO1
+    SUP5 --> PO1
+    PO13 --> APR1
+    APR8 --> REC1
+    REC13 --> UPD1
+    UPD13 --> CIE1
+    UPD15 --> CIE1
+    UPD16 --> CIE2
+    CIE5 --> End([Stock Actualizado<br/>Listo para Uso])
+    
+    %% CONSULTAS
+    subgraph Consultas["🔍 CONSULTAS Y REPORTES"]
+        CON1[GET /purchase-orders<br/>Listar todas con filtros]
+        CON2[GET /purchase-orders/:id<br/>Ver detalles completos]
+        CON3[GET /purchase-orders/:id/receipts<br/>Ver recepciones]
+        CON4[Información incluye:<br/>- Estado actual<br/>- Cantidades pedidas<br/>- Cantidades recibidas<br/>- Cantidades pendientes<br/>- Total gastado]
+        
+        CON1 --> CON4
+        CON2 --> CON4
+        CON3 --> CON4
+    end
+    
+    %% ESTILOS
+    classDef proveedorStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef poStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef aprobacionStyle fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef recepcionStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef actualizacionStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef cierreStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef consultaStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef decisionStyle fill:#ffebee,stroke:#c62828,stroke-width:3px
+    
+    class SUP2,SUP3,SUP4,SUP5 proveedorStyle
+    class PO1,PO2,PO3,PO4,PO6,PO7,PO8,PO9,PO11,PO12,PO13 poStyle
+    class APR1,APR2,APR4,APR5,APR6,APR7,APR8 aprobacionStyle
+    class REC1,REC2,REC3,REC4,REC5,REC6,REC7,REC9,REC11,REC13 recepcionStyle
+    class UPD1,UPD2,UPD3,UPD4,UPD5,UPD6,UPD7,UPD9,UPD10,UPD11,UPD13,UPD15,UPD16 actualizacionStyle
+    class CIE2,CIE3,CIE4,CIE5 cierreStyle
+    class CON1,CON2,CON3,CON4 consultaStyle
+    class SUP1,PO5,PO10,APR3,REC8,REC10,REC12,UPD8,UPD12,UPD14,CIE1 decisionStyle

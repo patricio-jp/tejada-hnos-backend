@@ -1,0 +1,264 @@
+graph TB
+    Start([Gestión de Inventario])
+    
+    %% TIPOS DE INVENTARIO
+    subgraph Tipos["📦 TIPOS DE INVENTARIO"]
+        TIP1[Inventario de Insumos<br/>Inputs]
+        TIP2[Inventario de Producto<br/>Harvest Lots]
+        TIP3[Control diferenciado<br/>por tipo]
+        
+        TIP1 --> TIP3
+        TIP2 --> TIP3
+    end
+    
+    %% INVENTARIO DE INSUMOS
+    subgraph Insumos["🧪 INVENTARIO DE INPUTS"]
+        INS1[Catálogo de Inputs]
+        INS2[Campos por Input:<br/>- name<br/>- unit KG/LITRO/UNIDAD<br/>- stock cantidad actual<br/>- costPerUnit precio promedio]
+        INS3[Stock inicial: 0]
+        INS4{Movimientos<br/>de stock}
+        
+        INS1 --> INS2
+        INS2 --> INS3
+        INS3 --> INS4
+    end
+    
+    %% ENTRADAS DE INSUMOS
+    subgraph Entradas["➕ ENTRADAS - Goods Receipts"]
+        ENT1[Recepción de<br/>Purchase Order]
+        ENT2[Por cada<br/>Goods Receipt Detail]
+        ENT3[Datos:<br/>- inputId<br/>- quantityReceived<br/>- unitPrice del PO Detail]
+        ENT4[Calcular nuevo stock:<br/>stock += quantityReceived]
+        ENT5[Actualizar costPerUnit<br/>promedio ponderado]
+        ENT6[Formula:<br/>totalCost = Σ precio × cantidad<br/>totalQty = Σ cantidades<br/>newCost = totalCost ÷ totalQty]
+        ENT7[Ejemplo:<br/>Stock: 100kg @ $5/kg<br/>Recibo: 50kg @ $6/kg<br/>Nuevo: 150kg @ $5.33/kg]
+        ENT8[Guardar Input<br/>actualizado]
+        ENT9[Registrar movimiento<br/>en historial]
+        
+        ENT1 --> ENT2
+        ENT2 --> ENT3
+        ENT3 --> ENT4
+        ENT4 --> ENT5
+        ENT5 --> ENT6
+        ENT6 --> ENT7
+        ENT7 --> ENT8
+        ENT8 --> ENT9
+    end
+    
+    %% SALIDAS DE INSUMOS
+    subgraph Salidas["➖ SALIDAS - Input Usage"]
+        SAL1[Activity aprobada<br/>con uso de insumos]
+        SAL2[Por cada<br/>Input Usage]
+        SAL3[Datos:<br/>- inputId<br/>- quantityUsed<br/>- activityId]
+        SAL4[Descontar stock:<br/>stock -= quantityUsed]
+        SAL5{Stock<br/>suficiente?}
+        SAL6[Advertencia:<br/>Stock negativo<br/>reabastecer]
+        SAL7[Stock OK<br/>continuar]
+        SAL8[Guardar Input<br/>actualizado]
+        SAL9[Registrar movimiento<br/>en historial]
+        SAL10[Calcular costo<br/>de la Activity]
+        SAL11[costInsumos =<br/>quantityUsed × costPerUnit]
+        
+        SAL1 --> SAL2
+        SAL2 --> SAL3
+        SAL3 --> SAL4
+        SAL4 --> SAL5
+        SAL5 -->|No| SAL6
+        SAL5 -->|Sí| SAL7
+        SAL6 --> SAL8
+        SAL7 --> SAL8
+        SAL8 --> SAL9
+        SAL9 --> SAL10
+        SAL10 --> SAL11
+    end
+    
+    %% AJUSTES MANUALES
+    subgraph Ajustes["🔧 AJUSTES MANUALES"]
+        AJU1[Razones para ajustar:<br/>- Merma<br/>- Robo<br/>- Error de registro<br/>- Inventario físico]
+        AJU2[ADMIN crea<br/>ajuste manual]
+        AJU3[Endpoint propuesto:<br/>PATCH /inputs/:id/stock]
+        AJU4[Datos:<br/>- adjustment cantidad +/-<br/>- reason motivo<br/>- notes detalles]
+        AJU5[Aplicar ajuste:<br/>stock += adjustment]
+        AJU6[Registrar en historial<br/>con razón]
+        AJU7[Alerta si ajuste<br/>significativo]
+        
+        AJU1 --> AJU2
+        AJU2 --> AJU3
+        AJU3 --> AJU4
+        AJU4 --> AJU5
+        AJU5 --> AJU6
+        AJU6 --> AJU7
+    end
+    
+    %% INVENTARIO DE PRODUCTO
+    subgraph Producto["🌰 INVENTARIO DE PRODUCTO - Harvest Lots"]
+        PRD1[Harvest Lots<br/>como inventario]
+        PRD2[Campos por lote:<br/>- lotCode<br/>- variety<br/>- caliber<br/>- netWeightKg stock<br/>- status]
+        PRD3[Estados posibles:<br/>PENDIENTE_PROCESO<br/>EN_STOCK<br/>VENDIDO]
+        PRD4{Movimientos<br/>de lotes}
+        
+        PRD1 --> PRD2
+        PRD2 --> PRD3
+        PRD3 --> PRD4
+    end
+    
+    %% ENTRADAS DE PRODUCTO
+    subgraph EntradasProd["➕ ENTRADAS - Cosecha y Proceso"]
+        EPR1[Cosecha en campo]
+        EPR2[Crear Harvest Lot]
+        EPR3[Registrar grossWeightKg<br/>peso bruto húmedo]
+        EPR4[Status: PENDIENTE_PROCESO<br/>netWeightKg: null]
+        EPR5[Proceso de secado]
+        EPR6[Actualizar netWeightKg<br/>peso seco final]
+        EPR7[Asignar caliber<br/>clasificación]
+        EPR8[Sistema calcula<br/>yieldPercentage]
+        EPR9[Status: EN_STOCK<br/>disponible para venta]
+        EPR10[Inventario actualizado]
+        
+        EPR1 --> EPR2
+        EPR2 --> EPR3
+        EPR3 --> EPR4
+        EPR4 --> EPR5
+        EPR5 --> EPR6
+        EPR6 --> EPR7
+        EPR7 --> EPR8
+        EPR8 --> EPR9
+        EPR9 --> EPR10
+    end
+    
+    %% SALIDAS DE PRODUCTO
+    subgraph SalidasProd["➖ SALIDAS - Shipments"]
+        SPR1[Shipment aprobado<br/>para cliente]
+        SPR2[Por cada<br/>Shipment Lot Detail]
+        SPR3[Datos:<br/>- harvestLotId<br/>- quantityTakenKg]
+        SPR4[Descontar del lote:<br/>netWeightKg -= quantityTakenKg]
+        SPR5{Lote<br/>agotado?}
+        SPR6[Status: VENDIDO<br/>netWeightKg = 0]
+        SPR7[Status: EN_STOCK<br/>netWeightKg > 0]
+        SPR8[Guardar Harvest Lot<br/>actualizado]
+        SPR9[Trazabilidad completa<br/>cliente → lote → parcela]
+        
+        SPR1 --> SPR2
+        SPR2 --> SPR3
+        SPR3 --> SPR4
+        SPR4 --> SPR5
+        SPR5 -->|Sí| SPR6
+        SPR5 -->|No| SPR7
+        SPR6 --> SPR8
+        SPR7 --> SPR8
+        SPR8 --> SPR9
+    end
+    
+    %% CONSULTAS DE INVENTARIO
+    subgraph Consultas["🔍 CONSULTAS DE INVENTARIO"]
+        CON1[Inventario de Insumos]
+        CON2[GET /inputs<br/>ver todo el catálogo]
+        CON3[Información:<br/>- Stock actual<br/>- Costo unitario<br/>- Alertas de reorden]
+        CON4[Inventario de Producto]
+        CON5[GET /harvest-lots<br/>?status=EN_STOCK]
+        CON6[Agrupar por:<br/>- Variety<br/>- Caliber<br/>- Field]
+        CON7[Mostrar:<br/>- Stock total por calibre<br/>- Stock comprometido<br/>- Stock disponible<br/>- Antigüedad lotes]
+        
+        CON1 --> CON2
+        CON2 --> CON3
+        CON4 --> CON5
+        CON5 --> CON6
+        CON6 --> CON7
+    end
+    
+    %% REPORTES AVANZADOS
+    subgraph Reportes["📊 REPORTES AVANZADOS"]
+        REP1[Reporte de Valorización]
+        REP2[Insumos:<br/>stock × costPerUnit<br/>= valor total]
+        REP3[Producto:<br/>netWeightKg × precio venta<br/>= valor potencial]
+        REP4[Reporte de Movimientos]
+        REP5[Por período:<br/>- Entradas compras<br/>- Salidas consumo<br/>- Stock inicial<br/>- Stock final]
+        REP6[Reporte de Rotación]
+        REP7[Productos:<br/>- FIFO antigüedad<br/>- Lotes sin movimiento<br/>- Velocidad de venta]
+        REP8[Alertas Automáticas]
+        REP9[Insumos:<br/>- Stock bajo<br/>- Stock crítico<br/>- Stock negativo]
+        REP10[Producto:<br/>- Lotes muy antiguos<br/>- Stock bajo por calibre]
+        
+        REP1 --> REP2
+        REP2 --> REP3
+        REP4 --> REP5
+        REP6 --> REP7
+        REP8 --> REP9
+        REP9 --> REP10
+    end
+    
+    %% STOCK COMPROMETIDO
+    subgraph Comprometido["🔒 STOCK COMPROMETIDO"]
+        CMP1[Sales Orders aprobadas<br/>no despachadas]
+        CMP2[Calcular stock<br/>comprometido]
+        CMP3[Por cada SO Detail:<br/>quantityKg - quantityShipped]
+        CMP4[Stock disponible:<br/>total EN_STOCK - comprometido]
+        CMP5[Mostrar en consultas:<br/>- Stock físico<br/>- Stock comprometido<br/>- Stock disponible venta]
+        CMP6[Validar al crear SO:<br/>stock disponible suficiente]
+        
+        CMP1 --> CMP2
+        CMP2 --> CMP3
+        CMP3 --> CMP4
+        CMP4 --> CMP5
+        CMP5 --> CMP6
+    end
+    
+    %% AUDITORIA
+    subgraph Auditoria["📝 AUDITORÍA Y TRAZABILIDAD"]
+        AUD1[Historial de movimientos]
+        AUD2[Tabla propuesta:<br/>inventory_movements]
+        AUD3[Campos:<br/>- type ENTRADA/SALIDA/AJUSTE<br/>- entityType INPUT/HARVEST_LOT<br/>- entityId<br/>- quantity<br/>- reference ID transacción<br/>- userId<br/>- timestamp<br/>- notes]
+        AUD4[Permite:<br/>- Auditorías<br/>- Detectar discrepancias<br/>- Trazabilidad completa<br/>- Compliance]
+        
+        AUD1 --> AUD2
+        AUD2 --> AUD3
+        AUD3 --> AUD4
+    end
+    
+    %% VALIDACIONES
+    subgraph Validaciones["✅ VALIDACIONES"]
+        VAL1[Inputs:<br/>- Stock no negativo advertencia<br/>- costPerUnit >= 0<br/>- quantityReceived > 0]
+        VAL2[Harvest Lots:<br/>- netWeightKg <= grossWeightKg<br/>- netWeightKg >= 0<br/>- No vender más de disponible]
+        VAL3[Movimientos:<br/>- Fechas coherentes<br/>- Cantidades > 0<br/>- Referencias válidas]
+        
+        VAL1 --> VAL2
+        VAL2 --> VAL3
+    end
+    
+    %% FLUJO PRINCIPAL
+    Start --> TIP3
+    INS4 --> ENT1
+    INS4 --> SAL1
+    INS4 --> AJU1
+    PRD4 --> EPR1
+    PRD4 --> SPR1
+    
+    End([Inventario Controlado<br/>y Trazable])
+    
+    %% ESTILOS
+    classDef tipoStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef insumoStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef entradaStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef salidaStyle fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef ajusteStyle fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef productoStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef consultaStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef reporteStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef comprometidoStyle fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef auditoriaStyle fill:#ede7f6,stroke:#4527a0,stroke-width:2px
+    classDef validacionStyle fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef decisionStyle fill:#ffcdd2,stroke:#b71c1c,stroke-width:3px
+    
+    class TIP1,TIP2,TIP3 tipoStyle
+    class INS1,INS2,INS3,INS4 insumoStyle
+    class ENT1,ENT2,ENT3,ENT4,ENT5,ENT6,ENT7,ENT8,ENT9 entradaStyle
+    class SAL1,SAL2,SAL3,SAL4,SAL7,SAL8,SAL9,SAL10,SAL11 salidaStyle
+    class AJU1,AJU2,AJU3,AJU4,AJU5,AJU6,AJU7 ajusteStyle
+    class PRD1,PRD2,PRD3,PRD4,EPR1,EPR2,EPR3,EPR4,EPR5,EPR6,EPR7,EPR8,EPR9,EPR10 productoStyle
+    class SPR1,SPR2,SPR3,SPR4,SPR7,SPR8,SPR9 salidaStyle
+    class CON1,CON2,CON3,CON4,CON5,CON6,CON7 consultaStyle
+    class REP1,REP2,REP3,REP4,REP5,REP6,REP7,REP8,REP9,REP10 reporteStyle
+    class CMP1,CMP2,CMP3,CMP4,CMP5,CMP6 comprometidoStyle
+    class AUD1,AUD2,AUD3,AUD4 auditoriaStyle
+    class VAL1,VAL2,VAL3 validacionStyle
+    class SAL5,SAL6,SPR5,SPR6 decisionStyle

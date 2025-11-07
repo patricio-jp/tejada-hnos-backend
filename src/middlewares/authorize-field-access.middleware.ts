@@ -99,6 +99,76 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
 
       // CAPATAZ: Ve sus OTs asignadas + OTs de parcelas en sus campos gestionados
       if (role === UserRole.CAPATAZ) {
+        // ============================================================================
+        // VALIDACIÓN 1: Si está accediendo a una OT específica por ID (GET, PUT, DELETE, o creando actividades)
+        // Validar PRIMERO el acceso a la OT existente (tanto para CAPATAZ con campos como sin campos)
+        // ============================================================================
+        const workOrderId = req.params.id || req.params.workOrderId;
+        if (workOrderId && req.path.includes('/work-orders/')) {
+          const workOrderRepository = dataSource.getRepository(WorkOrder);
+          const workOrder = await workOrderRepository.findOne({
+            where: { id: workOrderId },
+            relations: ['plots'],
+            withDeleted: true, // Para permitir restore
+          });
+
+          if (!workOrder) {
+            throw new HttpException(
+              StatusCodes.NOT_FOUND,
+              'La orden de trabajo no fue encontrada'
+            );
+          }
+
+          // Validar que el CAPATAZ tenga acceso:
+          // 1. La OT está asignada a él, O
+          // 2. (Si tiene campos gestionados) La OT tiene parcelas en sus campos gestionados
+          const isAssignedToHim = workOrder.assignedToId === userId;
+          const hasAccessToPlots = managedFieldIds.length > 0 && 
+            workOrder.plots?.some(plot => managedFieldIds.includes(plot.fieldId));
+
+          if (!isAssignedToHim && !hasAccessToPlots) {
+            throw new HttpException(
+              StatusCodes.FORBIDDEN,
+              'No tienes permisos para acceder a esta orden de trabajo'
+            );
+          }
+        }
+
+        // ============================================================================
+        // VALIDACIÓN 2: Si está accediendo a una actividad específica por ID
+        // Validar acceso (tanto para CAPATAZ con campos como sin campos)
+        // ============================================================================
+        if (req.params.id && req.path.includes('/activities/')) {
+          const activityId = req.params.id;
+          const activityRepository = dataSource.getRepository(Activity);
+          const activity = await activityRepository.findOne({
+            where: { id: activityId },
+            relations: ['workOrder', 'workOrder.plots'],
+            withDeleted: true,
+          });
+
+          if (!activity) {
+            throw new HttpException(
+              StatusCodes.NOT_FOUND,
+              'La actividad no fue encontrada'
+            );
+          }
+
+          // Validar que el CAPATAZ tenga acceso a la WorkOrder de esta actividad:
+          // 1. La OT está asignada a él, O
+          // 2. (Si tiene campos gestionados) La OT tiene parcelas en sus campos gestionados
+          const isAssignedToHim = activity.workOrder.assignedToId === userId;
+          const hasAccessToPlots = managedFieldIds.length > 0 && 
+            activity.workOrder.plots?.some(plot => managedFieldIds.includes(plot.fieldId));
+
+          if (!isAssignedToHim && !hasAccessToPlots) {
+            throw new HttpException(
+              StatusCodes.FORBIDDEN,
+              'No tienes permisos para acceder a esta actividad'
+            );
+          }
+        }
+
         // Si no tiene campos gestionados, solo ve sus OTs asignadas (comportamiento de OPERARIO)
         if (managedFieldIds.length === 0) {
           req.requiredAssignedToId = userId;
@@ -120,43 +190,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         }
 
         // ============================================================================
-        // VALIDACIÓN 1: Si está accediendo a una OT específica por ID (PUT, DELETE, o creando actividades)
-        // Validar PRIMERO el acceso a la OT existente ANTES de validar plots nuevos
-        // ============================================================================
-        const workOrderId = req.params.id || req.params.workOrderId;
-        if (workOrderId && req.path.includes('/work-orders/')) {
-          const workOrderRepository = dataSource.getRepository(WorkOrder);
-          const workOrder = await workOrderRepository.findOne({
-            where: { id: workOrderId },
-            relations: ['plots'],
-            withDeleted: true, // Para permitir restore
-          });
-
-          if (!workOrder) {
-            throw new HttpException(
-              StatusCodes.NOT_FOUND,
-              'La orden de trabajo no fue encontrada'
-            );
-          }
-
-          // Validar que el CAPATAZ tenga acceso:
-          // 1. La OT está asignada a él, O
-          // 2. La OT tiene parcelas en sus campos gestionados
-          const isAssignedToHim = workOrder.assignedToId === userId;
-          const hasAccessToPlots = workOrder.plots?.some(plot => 
-            managedFieldIds.includes(plot.fieldId)
-          );
-
-          if (!isAssignedToHim && !hasAccessToPlots) {
-            throw new HttpException(
-              StatusCodes.FORBIDDEN,
-              'No tienes permisos para acceder a esta orden de trabajo'
-            );
-          }
-        }
-
-        // ============================================================================
-        // VALIDACIÓN 2: Validar plots en POST y PUT de WorkOrders (CAPATAZ con campos gestionados)
+        // VALIDACIÓN 3: Validar plots en POST y PUT de WorkOrders (CAPATAZ con campos gestionados)
         // Esta validación ocurre DESPUÉS de validar acceso a la OT (si aplica)
         // ============================================================================
         if ((req.method === 'POST' || req.method === 'PUT') && 
@@ -179,37 +213,6 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
                 `No tienes permisos para asignar las siguientes parcelas: ${plotNames}. Solo puedes asignar parcelas de los campos que gestionas.`
               );
             }
-          }
-        }
-
-        // Si está accediendo a una actividad específica por ID
-        if (req.params.id && req.path.includes('/activities/')) {
-          const activityId = req.params.id;
-          const activityRepository = dataSource.getRepository(Activity);
-          const activity = await activityRepository.findOne({
-            where: { id: activityId },
-            relations: ['workOrder', 'workOrder.plots'],
-            withDeleted: true,
-          });
-
-          if (!activity) {
-            throw new HttpException(
-              StatusCodes.NOT_FOUND,
-              'La actividad no fue encontrada'
-            );
-          }
-
-          // Validar que el CAPATAZ tenga acceso a la WorkOrder de esta actividad
-          const isAssignedToHim = activity.workOrder.assignedToId === userId;
-          const hasAccessToPlots = activity.workOrder.plots?.some(plot => 
-            managedFieldIds.includes(plot.fieldId)
-          );
-
-          if (!isAssignedToHim && !hasAccessToPlots) {
-            throw new HttpException(
-              StatusCodes.FORBIDDEN,
-              'No tienes permisos para acceder a esta actividad'
-            );
           }
         }
 

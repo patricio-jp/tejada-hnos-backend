@@ -51,11 +51,9 @@ export class ActivityController {
       if (req.managedFieldIds && req.managedFieldIds.length > 0) {
         filters.managedFieldIds = req.managedFieldIds;
         
-        // Si NO hay filtro de assignedToId en query, incluir al CAPATAZ también
-        // Si HAY filtro de assignedToId, respetarlo (para que el CAPATAZ pueda supervisar a otros)
-        if (!req.query.assignedToId && req.user?.userId) {
-          filters.assignedToId = req.user.userId;
-        }
+        // NO agregar assignedToId automáticamente para CAPATAZ con campos
+        // El OR en el servicio ya maneja mostrar OTs en sus campos gestionados
+        // Si el usuario filtra explícitamente por assignedToId, respetar ese filtro (ya está en filters.assignedToId de arriba)
       }
 
       const activities = await this.activityService.findAll(
@@ -138,8 +136,7 @@ export class ActivityController {
    * 3. OPERARIO modifica → Status: PENDING (requiere nueva aprobación)
    * 
    * REGLAS:
-   * - OPERARIO no puede modificar actividades PENDING (debe esperar aprobación)
-   * - OPERARIO puede modificar actividades APPROVED/REJECTED (vuelven a PENDING)
+   * - OPERARIO puede modificar actividades PENDING o APPROVED/REJECTED (vuelven a PENDING)
    * - OPERARIO no puede cambiar el status manualmente
    * - CAPATAZ/ADMIN pueden modificar cualquier actividad y cambiar su status
    */
@@ -152,9 +149,6 @@ export class ActivityController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la actividad es requerido.');
       }
 
-      // Obtener la actividad actual para validar su estado
-      const currentActivity = await this.activityService.findById(id);
-
       // OPERARIO: validaciones especiales
       if (req.user?.role === UserRole.OPERARIO) {
         // 1. No puede cambiar el status (solo CAPATAZ/ADMIN pueden aprobar/rechazar)
@@ -165,15 +159,7 @@ export class ActivityController {
           );
         }
 
-        // 2. No puede modificar una actividad que está PENDING
-        if (currentActivity.status === ActivityStatus.PENDING) {
-          throw new HttpException(
-            StatusCodes.FORBIDDEN,
-            'No puedes modificar una actividad que está pendiente de aprobación. Espera a que un capataz o administrador la apruebe.'
-          );
-        }
-
-        // 3. Si la actividad está APPROVED o REJECTED, al modificarla vuelve a PENDING
+        // 2. Si la actividad está APPROVED o REJECTED, al modificarla vuelve a PENDING
         // (para que un capataz revise los cambios)
         activityData.status = ActivityStatus.PENDING;
       }

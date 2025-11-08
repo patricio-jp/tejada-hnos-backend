@@ -107,22 +107,29 @@ export class ActivityService {
                 });
             }
 
-            // Filtro para OPERARIO: Solo actividades de OTs asignadas a él
-            if (filters.assignedToId) {
+            // Filtro especial para CAPATAZ con campos gestionados
+            if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
+                // CAPATAZ ve actividades de OTs con parcelas en sus campos gestionados
+                // O (si se especifica) OTs asignadas a un usuario específico
+                if (filters.assignedToId) {
+                    queryBuilder.andWhere(
+                        '(plots.fieldId IN (:...managedFieldIds) OR workOrder.assignedToId = :assignedToId)',
+                        { 
+                            managedFieldIds: filters.managedFieldIds,
+                            assignedToId: filters.assignedToId
+                        }
+                    );
+                } else {
+                    // Solo filtrar por campos gestionados (sin filtro de assignedToId)
+                    queryBuilder.andWhere('plots.fieldId IN (:...managedFieldIds)', {
+                        managedFieldIds: filters.managedFieldIds
+                    });
+                }
+            } else if (filters.assignedToId) {
+                // Filtro para OPERARIO o CAPATAZ sin campos: Solo actividades de OTs asignadas
                 queryBuilder.andWhere('workOrder.assignedToId = :assignedToId', {
                     assignedToId: filters.assignedToId
                 });
-            }
-
-            // Filtro especial para CAPATAZ: Solo actividades de OTs con parcelas en campos gestionados o asignadas a él
-            if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
-                queryBuilder.andWhere(
-                    '(plots.fieldId IN (:...managedFieldIds) OR workOrder.assignedToId = :assignedToId)',
-                    { 
-                        managedFieldIds: filters.managedFieldIds,
-                        assignedToId: filters.assignedToId
-                    }
-                );
             }
         }
 

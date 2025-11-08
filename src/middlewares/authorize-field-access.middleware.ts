@@ -77,7 +77,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         }
 
         // Si está accediendo a una actividad específica por ID
-        if (req.params.id && req.path.includes('/activities/')) {
+        if (req.params.id && (req.originalUrl.includes('/activities/') || req.path.includes('/activities/'))) {
           const activityId = req.params.id;
           const activityRepository = dataSource.getRepository(Activity);
           const activity = await activityRepository.findOne({
@@ -104,7 +104,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         // Validar PRIMERO el acceso a la OT existente (tanto para CAPATAZ con campos como sin campos)
         // ============================================================================
         const workOrderId = req.params.id || req.params.workOrderId;
-        if (workOrderId && req.path.includes('/work-orders/')) {
+        if (workOrderId && (req.originalUrl.includes('/work-orders/') || req.path.includes('/work-orders/'))) {
           const workOrderRepository = dataSource.getRepository(WorkOrder);
           const workOrder = await workOrderRepository.findOne({
             where: { id: workOrderId },
@@ -138,7 +138,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         // VALIDACIÓN 2: Si está accediendo a una actividad específica por ID
         // Validar acceso (tanto para CAPATAZ con campos como sin campos)
         // ============================================================================
-        if (req.params.id && req.path.includes('/activities/')) {
+        if (req.params.id && (req.originalUrl.includes('/activities/') || req.path.includes('/activities/'))) {
           const activityId = req.params.id;
           const activityRepository = dataSource.getRepository(Activity);
           const activity = await activityRepository.findOne({
@@ -174,7 +174,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           req.requiredAssignedToId = userId;
 
           // Para POST: Forzar auto-asignación en creación de WorkOrders
-          if (req.method === 'POST' && req.path.includes('/work-orders')) {
+          if (req.method === 'POST' && (req.originalUrl.includes('/work-orders') || req.path.includes('/work-orders'))) {
             if (req.body && !req.body.assignedToUserId) {
               // Auto-asignar al capataz si no especifica usuario
               req.body.assignedToUserId = userId;
@@ -194,8 +194,8 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         // Esta validación ocurre DESPUÉS de validar acceso a la OT (si aplica)
         // ============================================================================
         if ((req.method === 'POST' || req.method === 'PUT') && 
-            req.path.includes('/work-orders') && 
-            !req.path.includes('/activities')) {
+            (req.originalUrl.includes('/work-orders') || req.path.includes('/work-orders')) && 
+            !(req.originalUrl.includes('/activities') || req.path.includes('/activities'))) {
           
           const plotIds = req.body?.plotIds;
           
@@ -217,7 +217,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         }
 
         // Si está accediendo a una parcela específica, validar que pertenezca a sus campos
-        if (req.params.id && req.path.includes('/plots/')) {
+        if (req.params.id && (req.originalUrl.includes('/plots/') || req.path.includes('/plots/'))) {
           const plotId = req.params.id;
           const plotRepository = dataSource.getRepository(Plot);
           const plot = await plotRepository.findOne({
@@ -234,7 +234,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         }
 
         // Si está accediendo a un campo específico por ID, validar que lo gestione
-        if (req.params.id && req.path.includes('/fields/')) {
+        if (req.params.id && (req.originalUrl.includes('/fields/') || req.path.includes('/fields/'))) {
           const fieldId = req.params.id;
           
           if (!managedFieldIds.includes(fieldId)) {

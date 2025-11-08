@@ -1,0 +1,116 @@
+﻿√ should allow ADMIN to see all work orders (437 ms)
+√ should allow CAPATAZ to see work orders related to managed
+√ should ensure CAPATAZ_A and CAPATAZ_B see only their managed
+√ should allow OPERARIO to see only assigned work orders (386
+√ should ensure each OPERARIO sees only their assigned work
+√ should return empty array for OPERARIO with no assigned work
+√ should return 401 for unauthenticated requests (348 ms)
+√ should allow ADMIN to get any work order (385 ms)
+√ should allow CAPATAZ to get work order from managed field
+× should deny CAPATAZ access to work order from unmanaged
+× should deny CAPATAZ_B access to CAPATAZ_A managed field work
+√ should allow OPERARIO to get assigned work order (408 ms)
+√ should deny OPERARIO access to unassigned work order (391 ms)
+√ should deny OPERARIO_2 access to OPERARIO_1 assigned work
+× should ensure each OPERARIO can only access their own work
+× should allow ADMIN to create a work order (378 ms)
+× should allow CAPATAZ to create work order for managed field
+× should deny CAPATAZ from creating work order for unmanaged
+√ should deny OPERARIO from creating work order (363 ms)
+√ should allow ADMIN to update any work order (415 ms)
+√ should allow CAPATAZ to update work order from managed field
+× should deny CAPATAZ from updating work order from unmanaged
+√ should deny OPERARIO from updating work order (379 ms)
+√ should allow ADMIN to soft delete any work order (390 ms)
+√ should allow CAPATAZ to delete work order from managed field
+× should deny CAPATAZ from deleting work order from unmanaged
+√ should deny OPERARIO from deleting work order (382 ms)
+× should allow OPERARIO to create activity for assigned work
+√ should deny OPERARIO from creating activity for unassigned
+√ should allow CAPATAZ to create activity for work order in
+√ should allow ADMIN to create activity for any work order
+√ should allow ADMIN to see all activities (390 ms)
+× should allow CAPATAZ to see activities from managed fields
+√ should allow OPERARIO to see activities from assigned work
+× should allow OPERARIO to update their own pending activity
+√ should allow CAPATAZ to approve pending activity (403 ms)
+√ should allow CAPATAZ to reject pending activity (396 ms)
+√ should allow ADMIN to approve pending activity (398 ms)
+× should deny CAPATAZ_B from approving activity in CAPATAZ_A
+× should ensure each CAPATAZ can only approve activities in
+√ should deny OPERARIO from approving their own activity (391
+√ should deny OPERARIO from updating activity of another
+× should ensure OPERARIO can only update their own activities
+√ should allow ADMIN to delete any activity (389 ms)
+√ should allow CAPATAZ to delete activity from managed field
+√ should deny OPERARIO from deleting activity (385 ms)
+× should complete the full workflow: Create WO, Add Activity,
+× should test rejection workflow: Create Activity, Reject
+Get work order by ID › should deny CAPATAZ access to work order from
+[90m 363 |[39m     it([32m'should deny CAPATAZ_B access to
+Get work order by ID › should deny CAPATAZ_B access to CAPATAZ_A
+[90m 397 |[39m       [90m// Assert: Should be denied[39m
+[90m 401 |[39m     it([32m'should allow OPERARIO to get
+Get work order by ID › should ensure each OPERARIO can only access
+Create work order › should allow ADMIN to create a work order
+Create work order › should allow CAPATAZ to create work order for
+Create work order › should deny CAPATAZ from creating work order for
+[90m 624 |[39m     it([32m'should deny OPERARIO from
+Update work order › should deny CAPATAZ from updating work order
+[90m 717 |[39m     it([32m'should deny OPERARIO from
+Soft delete work order › should deny CAPATAZ from deleting work
+[90m 797 |[39m     it([32m'should deny OPERARIO from
+/work-orders/:workOrderId/activities - Create activity › should
+activities › should allow CAPATAZ to see activities from managed
+[90m 961 |[39m     it([32m'should allow OPERARIO to see
+Update activity (Approval workflow) › should allow OPERARIO to
+Update activity (Approval workflow) › should deny CAPATAZ_B from
+[90m 1128 |[39m       [90m// Assert: Should be denied[39m
+[90m 1132 |[39m     it([32m'should ensure each CAPATAZ can
+Update activity (Approval workflow) › should ensure each CAPATAZ can
+Update activity (Approval workflow) › should ensure OPERARIO can
+Activity Workflow › should complete the full workflow: Create WO,
+Activity Workflow › should test rejection workflow: Create Activity,
+√ should allow ADMIN to see all fields (315 ms)
+× should allow CAPATAZ to see only managed fields (308 ms)
+× should ensure CAPATAZ_A and CAPATAZ_B see only their own
+× should return empty array for OPERARIO (no managed fields)
+√ should return 401 for unauthenticated requests (296 ms)
+√ should allow ADMIN to get any field (300 ms)
+√ should allow CAPATAZ to get managed field (305 ms)
+× should deny CAPATAZ access to unmanaged field (313 ms)
+× should deny CAPATAZ_B access to CAPATAZ_A managed field (304
+× should allow each CAPATAZ to access only their own fields
+× should deny OPERARIO access to any field (306 ms)
+√ should allow ADMIN to create a field (306 ms)
+√ should deny CAPATAZ from creating a field (298 ms)
+√ should deny OPERARIO from creating a field (295 ms)
+√ should allow ADMIN to update any field (306 ms)
+√ should deny CAPATAZ from updating a field (298 ms)
+√ should deny OPERARIO from updating a field (298 ms)
+√ should allow ADMIN to soft delete a field (306 ms)
+√ should deny CAPATAZ from deleting a field (301 ms)
+√ should deny OPERARIO from deleting a field (301 ms)
+√ should allow ADMIN to create a plot in any field (310 ms)
+√ should deny CAPATAZ from creating a plot (300 ms)
+√ should deny OPERARIO from creating a plot (301 ms)
+√ should allow ADMIN to get plots from any field (312 ms)
+√ should allow CAPATAZ to get plots from managed field (309 ms)
+× should deny CAPATAZ access to plots from unmanaged field
+× should deny OPERARIO access to plots (309 ms)
+√ should allow complete CRUD workflow for ADMIN (352 ms)
+should allow CAPATAZ to see only managed fields
+should ensure CAPATAZ_A and CAPATAZ_B see only their own fields
+[0m [90m 147 |[39m       [90m// Assert: Capataz A should
+should return empty array for OPERARIO (no managed fields)
+[90m 186 |[39m     it([32m'should return 401 for
+should deny CAPATAZ access to unmanaged field
+[90m 250 |[39m     it([32m'should deny CAPATAZ_B access to
+should deny CAPATAZ_B access to CAPATAZ_A managed field
+[90m 264 |[39m       [90m// Assert: Should be denied[39m
+[90m 268 |[39m     it([32m'should allow each CAPATAZ to
+should allow each CAPATAZ to access only their own fields
+should deny OPERARIO access to any field
+plots in field › should deny CAPATAZ access to plots from unmanaged
+[90m 728 |[39m     it([32m'should deny OPERARIO access to
+plots in field › should deny OPERARIO access to plots

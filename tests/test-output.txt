@@ -1,0 +1,1493 @@
+﻿
+> tejada-hnos-backend@1.0.0 test
+> jest
+
+  console.log
+    [dotenv@17.2.3] injecting env (10) from .env.test -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    [dotenv@17.2.3] injecting env (1) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.error
+    Error caught by errorHandler: HttpException [Error]: No tienes permisos para acceder a esta orden de trabajo
+        at E:\Proyectos\tejada-hnos-backend\src\middlewares\authorize-field-access.middleware.ts:72:19
+        at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+      status: 403
+    }
+
+    [0m [90m 25 |[39m )[33m:[39m [33mResponse[39m [33m|[39m [36mvoid[39m [33m=>[39m {
+     [90m 26 |[39m   [90m// Log completo para facilitar debugging[39m
+    [31m[1m>[22m[39m[90m 27 |[39m   console[33m.[39merror([32m'Error caught by errorHandler:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m
+     [90m 29 |[39m   [90m// Manejar errores típicos como JSON parse errors que Express puede lanzar[39m
+     [90m 30 |[39m   [36mif[39m (err [36minstanceof[39m [33mSyntaxError[39m [33m&&[39m [32m'status'[39m [36min[39m err [33m&&[39m (err [36mas[39m any)[33m.[39mstatus [33m===[39m [35m400[39m [33m&&[39m [32m'body'[39m [36min[39m err) {[0m
+
+      at errorHandler (src/middlewares/error-handler.middleware.ts:27:11)
+      at Layer.handleError (node_modules/router/lib/layer.js:116:17)
+      at trimPrefix (node_modules/router/index.js:340:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at node_modules/router/index.js:688:15
+      at next (node_modules/router/index.js:276:14)
+      at next (node_modules/router/lib/route.js:132:14)
+      at Layer.handleError (node_modules/router/lib/layer.js:111:12)
+      at next (node_modules/router/lib/route.js:155:13)
+      at src/middlewares/authorize-field-access.middleware.ts:272:7
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.error
+    Error caught by errorHandler: HttpException [Error]: No tienes permisos para acceder a esta orden de trabajo
+        at E:\Proyectos\tejada-hnos-backend\src\middlewares\authorize-field-access.middleware.ts:72:19
+        at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+      status: 403
+    }
+
+    [0m [90m 25 |[39m )[33m:[39m [33mResponse[39m [33m|[39m [36mvoid[39m [33m=>[39m {
+     [90m 26 |[39m   [90m// Log completo para facilitar debugging[39m
+    [31m[1m>[22m[39m[90m 27 |[39m   console[33m.[39merror([32m'Error caught by errorHandler:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m
+     [90m 29 |[39m   [90m// Manejar errores típicos como JSON parse errors que Express puede lanzar[39m
+     [90m 30 |[39m   [36mif[39m (err [36minstanceof[39m [33mSyntaxError[39m [33m&&[39m [32m'status'[39m [36min[39m err [33m&&[39m (err [36mas[39m any)[33m.[39mstatus [33m===[39m [35m400[39m [33m&&[39m [32m'body'[39m [36min[39m err) {[0m
+
+      at errorHandler (src/middlewares/error-handler.middleware.ts:27:11)
+      at Layer.handleError (node_modules/router/lib/layer.js:116:17)
+      at trimPrefix (node_modules/router/index.js:340:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at node_modules/router/index.js:688:15
+      at next (node_modules/router/index.js:276:14)
+      at next (node_modules/router/lib/route.js:132:14)
+      at Layer.handleError (node_modules/router/lib/layer.js:111:12)
+      at next (node_modules/router/lib/route.js:155:13)
+      at src/middlewares/authorize-field-access.middleware.ts:272:7
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.error
+    Error caught by errorHandler: HttpException [Error]: No tienes permisos para acceder a esta orden de trabajo
+        at E:\Proyectos\tejada-hnos-backend\src\middlewares\authorize-field-access.middleware.ts:72:19
+        at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+      status: 403
+    }
+
+    [0m [90m 25 |[39m )[33m:[39m [33mResponse[39m [33m|[39m [36mvoid[39m [33m=>[39m {
+     [90m 26 |[39m   [90m// Log completo para facilitar debugging[39m
+    [31m[1m>[22m[39m[90m 27 |[39m   console[33m.[39merror([32m'Error caught by errorHandler:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m
+     [90m 29 |[39m   [90m// Manejar errores típicos como JSON parse errors que Express puede lanzar[39m
+     [90m 30 |[39m   [36mif[39m (err [36minstanceof[39m [33mSyntaxError[39m [33m&&[39m [32m'status'[39m [36min[39m err [33m&&[39m (err [36mas[39m any)[33m.[39mstatus [33m===[39m [35m400[39m [33m&&[39m [32m'body'[39m [36min[39m err) {[0m
+
+      at errorHandler (src/middlewares/error-handler.middleware.ts:27:11)
+      at Layer.handleError (node_modules/router/lib/layer.js:116:17)
+      at trimPrefix (node_modules/router/index.js:340:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at Immediate.next (node_modules/router/index.js:291:5)
+      at Immediate._onImmediate (node_modules/router/index.js:688:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.error
+    Error caught by errorHandler: HttpException [Error]: No puedes modificar una actividad que está pendiente de aprobación. Espera a que un capataz o administrador la apruebe.
+        at update (E:\Proyectos\tejada-hnos-backend\src\controllers\activity.controller.ts:169:17)
+        at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+      status: 403
+    }
+
+    [0m [90m 25 |[39m )[33m:[39m [33mResponse[39m [33m|[39m [36mvoid[39m [33m=>[39m {
+     [90m 26 |[39m   [90m// Log completo para facilitar debugging[39m
+    [31m[1m>[22m[39m[90m 27 |[39m   console[33m.[39merror([32m'Error caught by errorHandler:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m
+     [90m 29 |[39m   [90m// Manejar errores típicos como JSON parse errors que Express puede lanzar[39m
+     [90m 30 |[39m   [36mif[39m (err [36minstanceof[39m [33mSyntaxError[39m [33m&&[39m [32m'status'[39m [36min[39m err [33m&&[39m (err [36mas[39m any)[33m.[39mstatus [33m===[39m [35m400[39m [33m&&[39m [32m'body'[39m [36min[39m err) {[0m
+
+      at errorHandler (src/middlewares/error-handler.middleware.ts:27:11)
+      at Layer.handleError (node_modules/router/lib/layer.js:116:17)
+      at trimPrefix (node_modules/router/index.js:340:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at node_modules/router/index.js:688:15
+      at next (node_modules/router/index.js:276:14)
+      at next (node_modules/router/lib/route.js:132:14)
+      at update (src/controllers/activity.controller.ts:187:7)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.error
+    Error caught by errorHandler: HttpException [Error]: Un operario no puede cambiar el estado de una actividad. Solo un capataz o administrador puede aprobar o rechazar actividades.
+        at update (E:\Proyectos\tejada-hnos-backend\src\controllers\activity.controller.ts:161:17)
+        at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+      status: 403
+    }
+
+    [0m [90m 25 |[39m )[33m:[39m [33mResponse[39m [33m|[39m [36mvoid[39m [33m=>[39m {
+     [90m 26 |[39m   [90m// Log completo para facilitar debugging[39m
+    [31m[1m>[22m[39m[90m 27 |[39m   console[33m.[39merror([32m'Error caught by errorHandler:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m
+     [90m 29 |[39m   [90m// Manejar errores típicos como JSON parse errors que Express puede lanzar[39m
+     [90m 30 |[39m   [36mif[39m (err [36minstanceof[39m [33mSyntaxError[39m [33m&&[39m [32m'status'[39m [36min[39m err [33m&&[39m (err [36mas[39m any)[33m.[39mstatus [33m===[39m [35m400[39m [33m&&[39m [32m'body'[39m [36min[39m err) {[0m
+
+      at errorHandler (src/middlewares/error-handler.middleware.ts:27:11)
+      at Layer.handleError (node_modules/router/lib/layer.js:116:17)
+      at trimPrefix (node_modules/router/index.js:340:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at node_modules/router/index.js:688:15
+      at next (node_modules/router/index.js:276:14)
+      at next (node_modules/router/lib/route.js:132:14)
+      at update (src/controllers/activity.controller.ts:187:7)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.error
+    Error caught by errorHandler: HttpException [Error]: No puedes modificar una actividad que está pendiente de aprobación. Espera a que un capataz o administrador la apruebe.
+        at update (E:\Proyectos\tejada-hnos-backend\src\controllers\activity.controller.ts:169:17)
+        at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+      status: 403
+    }
+
+    [0m [90m 25 |[39m )[33m:[39m [33mResponse[39m [33m|[39m [36mvoid[39m [33m=>[39m {
+     [90m 26 |[39m   [90m// Log completo para facilitar debugging[39m
+    [31m[1m>[22m[39m[90m 27 |[39m   console[33m.[39merror([32m'Error caught by errorHandler:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m
+     [90m 29 |[39m   [90m// Manejar errores típicos como JSON parse errors que Express puede lanzar[39m
+     [90m 30 |[39m   [36mif[39m (err [36minstanceof[39m [33mSyntaxError[39m [33m&&[39m [32m'status'[39m [36min[39m err [33m&&[39m (err [36mas[39m any)[33m.[39mstatus [33m===[39m [35m400[39m [33m&&[39m [32m'body'[39m [36min[39m err) {[0m
+
+      at errorHandler (src/middlewares/error-handler.middleware.ts:27:11)
+      at Layer.handleError (node_modules/router/lib/layer.js:116:17)
+      at trimPrefix (node_modules/router/index.js:340:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at node_modules/router/index.js:688:15
+      at next (node_modules/router/index.js:276:14)
+      at next (node_modules/router/lib/route.js:132:14)
+      at update (src/controllers/activity.controller.ts:187:7)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+node.exe : FAIL tests/e2e/work-orders-activities.test.ts (21.621 s)
+En C:\Program Files\nodejs\npm.ps1: 29 Carácter: 3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL tests/e2e/...t.ts  
+   (21.621 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  E2E: Work Orders and Activities Flow
+    GET /work-orders - List work orders
+      √ should allow ADMIN to see all work orders (429 ms)
+      √ should allow CAPATAZ to see work orders related to managed 
+fields (389 ms)
+      √ should ensure CAPATAZ_A and CAPATAZ_B see only their managed 
+fields work orders (395 ms)
+      √ should allow OPERARIO to see only assigned work orders (384 
+ms)
+      √ should ensure each OPERARIO sees only their assigned work 
+orders (395 ms)
+      √ should return empty array for OPERARIO with no assigned work 
+orders (385 ms)
+      √ should return 401 for unauthenticated requests (354 ms)
+    GET /work-orders/:id - Get work order by ID
+      √ should allow ADMIN to get any work order (392 ms)
+      √ should allow CAPATAZ to get work order from managed field 
+(388 ms)
+      × should deny CAPATAZ access to work order from unmanaged 
+field (394 ms)
+      × should deny CAPATAZ_B access to CAPATAZ_A managed field work 
+order (381 ms)
+      √ should allow OPERARIO to get assigned work order (397 ms)
+      √ should deny OPERARIO access to unassigned work order (398 ms)
+      √ should deny OPERARIO_2 access to OPERARIO_1 assigned work 
+order (381 ms)
+      × should ensure each OPERARIO can only access their own work 
+orders (380 ms)
+    POST /work-orders - Create work order
+      × should allow ADMIN to create a work order (376 ms)
+      × should allow CAPATAZ to create work order for managed field 
+(387 ms)
+      × should deny CAPATAZ from creating work order for unmanaged 
+field (366 ms)
+      √ should deny OPERARIO from creating work order (367 ms)
+    PUT /work-orders/:id - Update work order
+      √ should allow ADMIN to update any work order (403 ms)
+      √ should allow CAPATAZ to update work order from managed field 
+(407 ms)
+      × should deny CAPATAZ from updating work order from unmanaged 
+field (397 ms)
+      √ should deny OPERARIO from updating work order (384 ms)
+    DELETE /work-orders/:id - Soft delete work order
+      × should allow ADMIN to soft delete any work order (390 ms)
+      × should allow CAPATAZ to delete work order from managed field 
+(389 ms)
+      × should deny CAPATAZ from deleting work order from unmanaged 
+field (395 ms)
+      √ should deny OPERARIO from deleting work order (376 ms)
+    POST /work-orders/:workOrderId/activities - Create activity
+      × should allow OPERARIO to create activity for assigned work 
+order (387 ms)
+      √ should deny OPERARIO from creating activity for unassigned 
+work order (390 ms)
+      √ should allow CAPATAZ to create activity for work order in 
+managed field (386 ms)
+      √ should allow ADMIN to create activity for any work order 
+(381 ms)
+    GET /activities - List activities
+      √ should allow ADMIN to see all activities (383 ms)
+      × should allow CAPATAZ to see activities from managed fields 
+(388 ms)
+      √ should allow OPERARIO to see activities from assigned work 
+orders (380 ms)
+    PUT /activities/:id - Update activity (Approval workflow)
+      × should allow OPERARIO to update their own pending activity 
+(390 ms)
+      √ should allow CAPATAZ to approve pending activity (388 ms)
+      √ should allow CAPATAZ to reject pending activity (394 ms)
+      √ should allow ADMIN to approve pending activity (387 ms)
+      × should deny CAPATAZ_B from approving activity in CAPATAZ_A 
+managed field (374 ms)
+      × should ensure each CAPATAZ can only approve activities in 
+their managed fields (470 ms)
+      √ should deny OPERARIO from approving their own activity (382 
+ms)
+      √ should deny OPERARIO from updating activity of another 
+operario (386 ms)
+      × should ensure OPERARIO can only update their own activities 
+(382 ms)
+    DELETE /activities/:id - Delete activity
+      √ should allow ADMIN to delete any activity (389 ms)
+      √ should allow CAPATAZ to delete activity from managed field 
+(391 ms)
+      √ should deny OPERARIO from deleting activity (380 ms)
+    Complete Work Order and Activity Workflow
+      × should complete the full workflow: Create WO, Add Activity, 
+Approve Activity (360 ms)
+      × should test rejection workflow: Create Activity, Reject 
+Activity, Update and Resubmit (423 ms)
+
+  ● E2E: Work Orders and Activities Flow › GET /work-orders/:id - 
+Get work order by ID › should deny CAPATAZ access to work order from 
+unmanaged field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 358 |[39m
+     [90m 359 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 360 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 361 |[39m     })[33m;[39m
+     [90m 362 |[39m
+     [90m 363 |[39m     it([32m'should deny CAPATAZ_B access to 
+CAPATAZ_A managed field work order'[39m[33m,[39m [36masync[39m 
+() [33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:360:31)
+
+  ● E2E: Work Orders and Activities Flow › GET /work-orders/:id - 
+Get work order by ID › should deny CAPATAZ_B access to CAPATAZ_A 
+managed field work order
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 396 |[39m
+     [90m 397 |[39m       [90m// Assert: Should be denied[39m
+    [31m[1m>[22m[39m[90m 398 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 399 |[39m     })[33m;[39m
+     [90m 400 |[39m
+     [90m 401 |[39m     it([32m'should allow OPERARIO to get 
+assigned work order'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:398:31)
+
+  ● E2E: Work Orders and Activities Flow › GET /work-orders/:id - 
+Get work order by ID › should ensure each OPERARIO can only access 
+their own work orders
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "d2af2625-c99d-4122-a7dd-2a2ea43a1739"
+    Received: undefined
+
+    [0m [90m 513 |[39m         
+[33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m 
+[32m`Bearer ${operario.token}`[39m)[33m;[39m
+     [90m 514 |[39m       expect(response1[33m.[39mstatus)[33m.
+[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 515 |[39m       expect(response1[33m.
+[39mbody[33m.[39massignedToId)[33m.[39mtoBe(operario[33m.[39mi
+d)[33m;[39m
+     [90m     |[39m                                           
+[31m[1m^[22m[39m
+     [90m 516 |[39m
+     [90m 517 |[39m       [90m// Act & Assert: Operario 2 can 
+access WO2[39m
+     [90m 518 |[39m       [36mconst[39m response2 [33m=[39m 
+[36mawait[39m request(app)[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:515:43)
+
+  ● E2E: Work Orders and Activities Flow › POST /work-orders - 
+Create work order › should allow ADMIN to create a work order
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+    [0m [90m 557 |[39m
+     [90m 558 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 559 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 560 |[39m       expect(response[33m.[39mbody[33m.[39m
+data)[33m.[39mtoHaveProperty([32m'id'[39m)[33m;[39m
+     [90m 561 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[33m.[39mtitle)[33m.[39mtoBe([32m'New Work 
+Order'[39m)[33m;[39m
+     [90m 562 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[33m.[39massignedToId)[33m.[39mtoBe(operario[33m.[39mid)[3
+3m;[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:559:31)
+
+  ● E2E: Work Orders and Activities Flow › POST /work-orders - 
+Create work order › should allow CAPATAZ to create work order for 
+managed field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+    [0m [90m 595 |[39m
+     [90m 596 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 597 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 598 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[33m.[39mtitle)[33m.[39mtoBe([32m'Capataz Work 
+Order'[39m)[33m;[39m
+     [90m 599 |[39m     })[33m;[39m
+     [90m 600 |[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:597:31)
+
+  ● E2E: Work Orders and Activities Flow › POST /work-orders - 
+Create work order › should deny CAPATAZ from creating work order for 
+unmanaged field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 400
+
+    [0m [90m 619 |[39m
+     [90m 620 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 621 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 622 |[39m     })[33m;[39m
+     [90m 623 |[39m
+     [90m 624 |[39m     it([32m'should deny OPERARIO from 
+creating work order'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:621:31)
+
+  ● E2E: Work Orders and Activities Flow › PUT /work-orders/:id - 
+Update work order › should deny CAPATAZ from updating work order 
+from unmanaged field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 712 |[39m
+     [90m 713 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 714 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 715 |[39m     })[33m;[39m
+     [90m 716 |[39m
+     [90m 717 |[39m     it([32m'should deny OPERARIO from 
+updating work order'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:714:31)
+
+  ● E2E: Work Orders and Activities Flow › DELETE /work-orders/:id - 
+Soft delete work order › should allow ADMIN to soft delete any work 
+order
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 204
+    Received: 200
+
+    [0m [90m 749 |[39m
+     [90m 750 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 751 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m204[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 752 |[39m
+     [90m 753 |[39m       [90m// Verify in database[39m
+     [90m 754 |[39m       [36mconst[39m workOrderRepository 
+[33m=[39m dataSource[33m.[39mgetRepository([33mWorkOrder[39m)[
+33m;[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:751:31)
+
+  ● E2E: Work Orders and Activities Flow › DELETE /work-orders/:id - 
+Soft delete work order › should allow CAPATAZ to delete work order 
+from managed field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 204
+    Received: 200
+
+    [0m [90m 774 |[39m
+     [90m 775 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 776 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m204[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 777 |[39m     })[33m;[39m
+     [90m 778 |[39m
+     [90m 779 |[39m     it([32m'should deny CAPATAZ from deleting 
+work order from unmanaged field'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:776:31)
+
+  ● E2E: Work Orders and Activities Flow › DELETE /work-orders/:id - 
+Soft delete work order › should deny CAPATAZ from deleting work 
+order from unmanaged field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 790 |[39m
+     [90m 791 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 792 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 793 |[39m     })[33m;[39m
+     [90m 794 |[39m
+     [90m 795 |[39m     it([32m'should deny OPERARIO from 
+deleting work order'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:792:31)
+
+  ● E2E: Work Orders and Activities Flow › POST 
+/work-orders/:workOrderId/activities - Create activity › should 
+allow OPERARIO to create activity for assigned work order
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 4
+    Received: "4.00"
+
+    [0m [90m 838 |[39m       expect(response[33m.[39mbody[33m.
+[39mdata[33m.[39mtype)[33m.[39mtoBe([33mActivityType[39m[33m.
+[39m[33mPODA[39m)[33m;[39m
+     [90m 839 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[33m.[39mstatus)[33m.[39mtoBe([33mActivityStatus[39m[33m.
+[39m[33mPENDING[39m)[33m;[39m [90m// Default status[39m
+    [31m[1m>[22m[39m[90m 840 |[39m       expect(response[33m.
+[39mbody[33m.[39mdata[33m.[39mhoursWorked)[33m.[39mtoBe([35m4
+[39m)[33m;[39m
+     [90m     |[39m                                              
+[31m[1m^[22m[39m
+     [90m 841 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[33m.[39mworkOrderId)[33m.[39mtoBe(scenario[33m.[39massigne
+dWorkOrder[33m.[39mid)[33m;[39m
+     [90m 842 |[39m
+     [90m 843 |[39m       [90m// Verify in database[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:840:46)
+
+  ● E2E: Work Orders and Activities Flow › GET /activities - List 
+activities › should allow CAPATAZ to see activities from managed 
+fields
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+    [0m [90m 954 |[39m       [90m// Assert[39m
+     [90m 955 |[39m       expect(response[33m.[39mstatus)[33m.[
+39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 956 |[39m       expect(response[33m.
+[39mbody[33m.[39mdata[33m.[39mlength)[33m.[39mtoBeGreaterThan(
+[35m0[39m)[33m;[39m
+     [90m     |[39m                                         
+[31m[1m^[22m[39m
+     [90m 957 |[39m     })[33m;[39m
+     [90m 958 |[39m
+     [90m 959 |[39m     it([32m'should allow OPERARIO to see 
+activities from assigned work orders'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:956:41)
+
+  ● E2E: Work Orders and Activities Flow › PUT /activities/:id - 
+Update activity (Approval workflow) › should allow OPERARIO to 
+update their own pending activity
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 403
+
+    [0m [90m  999 |[39m
+     [90m 1000 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 1001 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+     [90m      |[39m                               
+[31m[1m^[22m[39m
+     [90m 1002 |[39m       expect(response[33m.[39mbody[33m.[39
+mdata[33m.[39mhoursWorked)[33m.[39mtoBe([35m7[39m)[33m;[39m
+     [90m 1003 |[39m       expect(response[33m.[39mbody[33m.[39
+mdata[33m.[39mstatus)[33m.[39mtoBe([33mActivityStatus[39m[33m.
+[39m[33mPENDING[39m)[33m;[39m
+     [90m 1004 |[39m     })[33m;[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:1001:31)
+
+  ● E2E: Work Orders and Activities Flow › PUT /activities/:id - 
+Update activity (Approval workflow) › should deny CAPATAZ_B from 
+approving activity in CAPATAZ_A managed field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 1125 |[39m
+     [90m 1126 |[39m       [90m// Assert: Should be denied[39m
+    [31m[1m>[22m[39m[90m 1127 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m      |[39m                               
+[31m[1m^[22m[39m
+     [90m 1128 |[39m     })[33m;[39m
+     [90m 1129 |[39m
+     [90m 1130 |[39m     it([32m'should ensure each CAPATAZ can 
+only approve activities in their managed fields'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:1127:31)
+
+  ● E2E: Work Orders and Activities Flow › PUT /activities/:id - 
+Update activity (Approval workflow) › should ensure each CAPATAZ can 
+only approve activities in their managed fields
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 1236 |[39m         
+[33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m 
+[32m`Bearer ${capataz.token}`[39m)
+     [90m 1237 |[39m         [33m.[39msend({ status[33m:[39m 
+[33mActivityStatus[39m[33m.[39m[33mAPPROVED[39m })[33m;[39m
+    [31m[1m>[22m[39m[90m 1238 |[39m       expect(responseCrossA
+[33m.[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m      |[39m                                     
+[31m[1m^[22m[39m
+     [90m 1239 |[39m
+     [90m 1240 |[39m       [90m// Act & Assert: Capataz B cannot 
+approve activity in field A[39m
+     [90m 1241 |[39m       [36mconst[39m responseCrossB 
+[33m=[39m [36mawait[39m request(app)[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:1238:37)
+
+  ● E2E: Work Orders and Activities Flow › PUT /activities/:id - 
+Update activity (Approval workflow) › should ensure OPERARIO can 
+only update their own activities
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 6
+    Received: undefined
+
+    [0m [90m 1359 |[39m         [33m.[39msend({ 
+hoursWorked[33m:[39m [35m6[39m })[33m;[39m
+     [90m 1360 |[39m       expect(response1[33m.[39mstatus)[33m.
+[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 1361 |[39m       expect(response1[33m
+.[39mbody[33m.[39mhoursWorked)[33m.[39mtoBe([35m6[39m)[33m;[
+39m
+     [90m      |[39m                                          
+[31m[1m^[22m[39m
+     [90m 1362 |[39m
+     [90m 1363 |[39m       [90m// Act & Assert: Operario 2 can 
+update their own activity[39m
+     [90m 1364 |[39m       [36mconst[39m response2 [33m=[39m 
+[36mawait[39m request(app)[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:1361:42)
+
+  ● E2E: Work Orders and Activities Flow › Complete Work Order and 
+Activity Workflow › should complete the full workflow: Create WO, 
+Add Activity, Approve Activity
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+    [0m [90m 1464 |[39m         })[33m;[39m
+     [90m 1465 |[39m
+    [31m[1m>[22m[39m[90m 1466 |[39m       expect(createWORespon
+se[33m.[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m      |[39m                                       
+[31m[1m^[22m[39m
+     [90m 1467 |[39m       [36mconst[39m workOrderId [33m=[39m 
+createWOResponse[33m.[39mbody[33m.[39mdata[33m.[39mid[33m;[39
+m
+     [90m 1468 |[39m
+     [90m 1469 |[39m       [90m// Step 2: OPERARIO creates an 
+activity[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:1466:39)
+
+  ● E2E: Work Orders and Activities Flow › Complete Work Order and 
+Activity Workflow › should test rejection workflow: Create Activity, 
+Reject Activity, Update and Resubmit
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 5
+    Received: "5.00"
+
+    [0m [90m 1594 |[39m       
+expect(finalActivity)[33m.[39mtoBeTruthy()[33m;[39m
+     [90m 1595 |[39m       expect(finalActivity[33m![39m[33m.[3
+9mstatus)[33m.[39mtoBe([33mActivityStatus[39m[33m.[39m[33mAPPR
+OVED[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 1596 |[39m       expect(finalActivity
+[33m![39m[33m.[39mhoursWorked)[33m.[39mtoBe([35m5[39m)[33m;[
+39m
+     [90m      |[39m                                          
+[31m[1m^[22m[39m
+     [90m 1597 |[39m     })[33m;[39m
+     [90m 1598 |[39m   })[33m;[39m
+     [90m 1599 |[39m })[33m;[39m[0m
+
+      at Object.<anonymous> 
+(tests/e2e/work-orders-activities.test.ts:1596:42)
+
+  console.log
+    [dotenv@17.2.3] injecting env (10) from .env.test -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    [dotenv@17.2.3] injecting env (1) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+  console.log
+    ✓ Cleared 20 tables
+
+      at clearDatabase (tests/helpers/database.helper.ts:97:15)
+
+FAIL tests/e2e/fields-plots.test.ts (8.933 s)
+  E2E: Fields and Plots Flow
+    GET /fields - List all fields
+      √ should allow ADMIN to see all fields (308 ms)
+      × should allow CAPATAZ to see only managed fields (306 ms)
+      × should ensure CAPATAZ_A and CAPATAZ_B see only their own 
+fields (314 ms)
+      × should return empty array for OPERARIO (no managed fields) 
+(302 ms)
+      √ should return 401 for unauthenticated requests (294 ms)
+    GET /fields/:id - Get field by ID
+      √ should allow ADMIN to get any field (298 ms)
+      √ should allow CAPATAZ to get managed field (300 ms)
+      × should deny CAPATAZ access to unmanaged field (298 ms)
+      × should deny CAPATAZ_B access to CAPATAZ_A managed field (298 
+ms)
+      × should allow each CAPATAZ to access only their own fields 
+(301 ms)
+      × should deny OPERARIO access to any field (301 ms)
+    POST /fields - Create field
+      √ should allow ADMIN to create a field (303 ms)
+      √ should deny CAPATAZ from creating a field (294 ms)
+      √ should deny OPERARIO from creating a field (292 ms)
+    PUT /fields/:id - Update field
+      √ should allow ADMIN to update any field (303 ms)
+      √ should deny CAPATAZ from updating a field (295 ms)
+      √ should deny OPERARIO from updating a field (297 ms)
+    DELETE /fields/:id - Soft delete field
+      × should allow ADMIN to soft delete a field (302 ms)
+      √ should deny CAPATAZ from deleting a field (295 ms)
+      √ should deny OPERARIO from deleting a field (295 ms)
+    POST /fields/:fieldId/plots - Create plot in field
+      √ should allow ADMIN to create a plot in any field (305 ms)
+      √ should deny CAPATAZ from creating a plot (296 ms)
+      √ should deny OPERARIO from creating a plot (296 ms)
+    GET /fields/:fieldId/plots - List plots in field
+      √ should allow ADMIN to get plots from any field (307 ms)
+      √ should allow CAPATAZ to get plots from managed field (307 ms)
+      × should deny CAPATAZ access to plots from unmanaged field 
+(306 ms)
+      × should deny OPERARIO access to plots (308 ms)
+    Complete Field-Plot Workflow
+      × should allow complete CRUD workflow for ADMIN (335 ms)
+
+  ● E2E: Fields and Plots Flow › GET /fields - List all fields › 
+should allow CAPATAZ to see only managed fields
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 2
+    Received array:  [{"address": "Address 2", "area": 150, 
+"createdAt": "2025-11-07T16:28:07.392Z", "deletedAt": null, "id": 
+"85a544ae-937f-48a1-bbc2-21bce3f15281", "location": {"coordinates": 
+[[[-70.6483, -33.4569], [-70.6482, -33.4569], [-70.6482, -33.457], 
+[-70.6483, -33.457], [-70.6483, -33.4569]]], "type": "Polygon"}, 
+"manager": null, "managerId": null, "name": "Campo No Gestionado", 
+"plots": [], "updatedAt": "2025-11-07T16:28:07.392Z"}, {"address": 
+"Address 1", "area": 100, "createdAt": "2025-11-07T16:28:07.389Z", 
+"deletedAt": null, "id": "ee391069-8d8a-4fd9-8587-d21f21cb156d", 
+"location": {"coordinates": [[[-70.6483, -33.4569], [-70.6482, 
+-33.4569], [-70.6482, -33.457], [-70.6483, -33.457], [-70.6483, 
+-33.4569]]], "type": "Polygon"}, "manager": {"createdAt": 
+"2025-11-07T16:28:07.216Z", "deletedAt": null, "email": 
+"capataz@test.com", "hourlyRate": "30.00", "id": 
+"732e0be9-035f-43f5-aa91-729fc939c083", "lastName": "Test", "name": 
+"Capataz", "role": "CAPATAZ", "updatedAt": 
+"2025-11-07T16:28:07.216Z"}, "managerId": 
+"732e0be9-035f-43f5-aa91-729fc939c083", "name": "Campo Gestionado", 
+"plots": [], "updatedAt": "2025-11-07T16:28:07.389Z"}]
+
+    [0m [90m 105 |[39m       [90m// Assert[39m
+     [90m 106 |[39m       expect(response[33m.[39mstatus)[33m.[
+39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 107 |[39m       expect(response[33m.
+[39mbody[33m.[39mdata)[33m.[39mtoHaveLength([35m1[39m)[33m;[3
+9m
+     [90m     |[39m                                  
+[31m[1m^[22m[39m
+     [90m 108 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[[35m0[39m][33m.[39mid)[33m.[39mtoBe(managedField[33m.[39
+mid)[33m;[39m
+     [90m 109 |[39m       expect(response[33m.[39mbody[33m.[39m
+data[[35m0[39m][33m.[39mname)[33m.[39mtoBe([32m'Campo 
+Gestionado'[39m)[33m;[39m
+     [90m 110 |[39m     })[33m;[39m[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:107:34)
+
+  ● E2E: Fields and Plots Flow › GET /fields - List all fields › 
+should ensure CAPATAZ_A and CAPATAZ_B see only their own fields
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 4
+    Received array:  [{"address": "Address Unmanaged", "area": 80, 
+"createdAt": "2025-11-07T16:28:07.723Z", "deletedAt": null, "id": 
+"35446747-42a2-4d7a-8db9-25c1c7796c66", "location": {"coordinates": 
+[[[-70.6483, -33.4569], [-70.6482, -33.4569], [-70.6482, -33.457], 
+[-70.6483, -33.457], [-70.6483, -33.4569]]], "type": "Polygon"}, 
+"manager": null, "managerId": null, "name": "Campo Sin Gestor", 
+"plots": [], "updatedAt": "2025-11-07T16:28:07.723Z"}, {"address": 
+"Address B1", "area": 150, "createdAt": "2025-11-07T16:28:07.721Z", 
+"deletedAt": null, "id": "087ac81b-5d39-4594-9f36-be65fe8c5800", 
+"location": {"coordinates": [[[-70.6483, -33.4569], [-70.6482, 
+-33.4569], [-70.6482, -33.457], [-70.6483, -33.457], [-70.6483, 
+-33.4569]]], "type": "Polygon"}, "manager": {"createdAt": 
+"2025-11-07T16:28:07.656Z", "deletedAt": null, "email": 
+"capatazB@test.com", "hourlyRate": "30.00", "id": 
+"72c2d804-050a-49fe-850d-8579589eebcb", "lastName": "Test", "name": 
+"CapatazB", "role": "CAPATAZ", "updatedAt": 
+"2025-11-07T16:28:07.656Z"}, "managerId": 
+"72c2d804-050a-49fe-850d-8579589eebcb", "name": "Campo B1", "plots": 
+[], "updatedAt": "2025-11-07T16:28:07.721Z"}, {"address": "Address 
+A2", "area": 120, "createdAt": "2025-11-07T16:28:07.718Z", 
+"deletedAt": null, "id": "49e01fc6-858b-4ed5-b31a-0f65f4d68b37", 
+"location": {"coordinates": [[[-70.6483, -33.4569], [-70.6482, 
+-33.4569], [-70.6482, -33.457], [-70.6483, -33.457], [-70.6483, 
+-33.4569]]], "type": "Polygon"}, "manager": {"createdAt": 
+"2025-11-07T16:28:07.542Z", "deletedAt": null, "email": 
+"capataz@test.com", "hourlyRate": "30.00", "id": 
+"bc18cf7a-7c09-4ce8-822a-6a3a77f8ef5a", "lastName": "Test", "name": 
+"Capataz", "role": "CAPATAZ", "updatedAt": 
+"2025-11-07T16:28:07.542Z"}, "managerId": 
+"bc18cf7a-7c09-4ce8-822a-6a3a77f8ef5a", "name": "Campo A2", "plots": 
+[], "updatedAt": "2025-11-07T16:28:07.718Z"}, {"address": "Address 
+A1", "area": 100, "createdAt": "2025-11-07T16:28:07.715Z", 
+"deletedAt": null, "id": "e1db09c6-f14c-464b-9643-58aa5920bb1f", 
+"location": {"coordinates": [[[-70.6483, -33.4569], [-70.6482, 
+-33.4569], [-70.6482, -33.457], [-70.6483, -33.457], [-70.6483, 
+-33.4569]]], "type": "Polygon"}, "manager": {"createdAt": 
+"2025-11-07T16:28:07.542Z", "deletedAt": null, "email": 
+"capataz@test.com", "hourlyRate": "30.00", "id": 
+"bc18cf7a-7c09-4ce8-822a-6a3a77f8ef5a", "lastName": "Test", "name": 
+"Capataz", "role": "CAPATAZ", "updatedAt": 
+"2025-11-07T16:28:07.542Z"}, "managerId": 
+"bc18cf7a-7c09-4ce8-822a-6a3a77f8ef5a", "name": "Campo A1", "plots": 
+[], "updatedAt": "2025-11-07T16:28:07.715Z"}]
+
+    [0m [90m 147 |[39m       [90m// Assert: Capataz A should 
+only see their 2 fields[39m
+     [90m 148 |[39m       expect(responseA[33m.[39mstatus)[33m.
+[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 149 |[39m       expect(responseA[33m.
+[39mbody[33m.[39mdata)[33m.[39mtoHaveLength([35m2[39m)[33m;[
+39m
+     [90m     |[39m                                   
+[31m[1m^[22m[39m
+     [90m 150 |[39m       [36mconst[39m fieldIdsA [33m=[39m 
+responseA[33m.[39mbody[33m.[39mdata[33m.[39mmap((f[33m:[39m 
+any) [33m=>[39m f[33m.[39mid)[33m;[39m
+     [90m 151 |[39m       expect(fieldIdsA)[33m.[39mtoContain(fie
+ldA1[33m.[39mid)[33m;[39m
+     [90m 152 |[39m       expect(fieldIdsA)[33m.[39mtoContain(fie
+ldA2[33m.[39mid)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:149:35)
+
+  ● E2E: Fields and Plots Flow › GET /fields - List all fields › 
+should return empty array for OPERARIO (no managed fields)
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"address": "Address 1", "area": 100, 
+"createdAt": "2025-11-07T16:28:08.026Z", "deletedAt": null, "id": 
+"b16847a4-2287-4491-ba2b-cc8febdaaf76", "location": {"coordinates": 
+[[[-70.6483, -33.4569], [-70.6482, -33.4569], [-70.6482, -33.457], 
+[-70.6483, -33.457], [-70.6483, -33.4569]]], "type": "Polygon"}, 
+"manager": {"createdAt": "2025-11-07T16:28:07.855Z", "deletedAt": 
+null, "email": "capataz@test.com", "hourlyRate": "30.00", "id": 
+"0f2e8424-2ae9-4043-a8b0-ee9c390fb11b", "lastName": "Test", "name": 
+"Capataz", "role": "CAPATAZ", "updatedAt": 
+"2025-11-07T16:28:07.855Z"}, "managerId": 
+"0f2e8424-2ae9-4043-a8b0-ee9c390fb11b", "name": "Campo 1", "plots": 
+[], "updatedAt": "2025-11-07T16:28:08.026Z"}]
+
+    [0m [90m 181 |[39m       [90m// Assert[39m
+     [90m 182 |[39m       expect(response[33m.[39mstatus)[33m.[
+39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 183 |[39m       expect(response[33m.
+[39mbody[33m.[39mdata)[33m.[39mtoHaveLength([35m0[39m)[33m;[3
+9m
+     [90m     |[39m                                  
+[31m[1m^[22m[39m
+     [90m 184 |[39m     })[33m;[39m
+     [90m 185 |[39m
+     [90m 186 |[39m     it([32m'should return 401 for 
+unauthenticated requests'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:183:34)
+
+  ● E2E: Fields and Plots Flow › GET /fields/:id - Get field by ID › 
+should deny CAPATAZ access to unmanaged field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 245 |[39m
+     [90m 246 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 247 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 248 |[39m     })[33m;[39m
+     [90m 249 |[39m
+     [90m 250 |[39m     it([32m'should deny CAPATAZ_B access to 
+CAPATAZ_A managed field'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:247:31)
+
+  ● E2E: Fields and Plots Flow › GET /fields/:id - Get field by ID › 
+should deny CAPATAZ_B access to CAPATAZ_A managed field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 263 |[39m
+     [90m 264 |[39m       [90m// Assert: Should be denied[39m
+    [31m[1m>[22m[39m[90m 265 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 266 |[39m     })[33m;[39m
+     [90m 267 |[39m
+     [90m 268 |[39m     it([32m'should allow each CAPATAZ to 
+access only their own fields'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:265:31)
+
+  ● E2E: Fields and Plots Flow › GET /fields/:id - Get field by ID › 
+should allow each CAPATAZ to access only their own fields
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "3e8732c5-9cc7-4d29-a552-8001d87eda36"
+    Received: undefined
+
+    [0m [90m 287 |[39m         
+[33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m 
+[32m`Bearer ${capataz.token}`[39m)[33m;[39m
+     [90m 288 |[39m       expect(responseA[33m.[39mstatus)[33m.
+[39mtoBe([35m200[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 289 |[39m       expect(responseA[33m.
+[39mbody[33m.[39mmanagerId)[33m.[39mtoBe(capataz[33m.[39mid)[
+33m;[39m
+     [90m     |[39m                                        
+[31m[1m^[22m[39m
+     [90m 290 |[39m
+     [90m 291 |[39m       [90m// Act & Assert: Capataz B can 
+access field B[39m
+     [90m 292 |[39m       [36mconst[39m responseB [33m=[39m 
+[36mawait[39m request(app)[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:289:40)
+
+  ● E2E: Fields and Plots Flow › GET /fields/:id - Get field by ID › 
+should deny OPERARIO access to any field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 324 |[39m
+     [90m 325 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 326 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 327 |[39m     })[33m;[39m
+     [90m 328 |[39m   })[33m;[39m
+     [90m 329 |[39m[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:326:31)
+
+  ● E2E: Fields and Plots Flow › DELETE /fields/:id - Soft delete 
+field › should allow ADMIN to soft delete a field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 204
+    Received: 200
+
+    [0m [90m 515 |[39m
+     [90m 516 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 517 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m204[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 518 |[39m
+     [90m 519 |[39m       [90m// Verify in database (soft 
+delete)[39m
+     [90m 520 |[39m       [36mconst[39m fieldRepository 
+[33m=[39m 
+dataSource[33m.[39mgetRepository([33mField[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:517:31)
+
+  ● E2E: Fields and Plots Flow › GET /fields/:fieldId/plots - List 
+plots in field › should deny CAPATAZ access to plots from unmanaged 
+field
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 722 |[39m
+     [90m 723 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 724 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 725 |[39m     })[33m;[39m
+     [90m 726 |[39m
+     [90m 727 |[39m     it([32m'should deny OPERARIO access to 
+plots'[39m[33m,[39m [36masync[39m () [33m=>[39m {[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:724:31)
+
+  ● E2E: Fields and Plots Flow › GET /fields/:fieldId/plots - List 
+plots in field › should deny OPERARIO access to plots
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+    [0m [90m 735 |[39m
+     [90m 736 |[39m       [90m// Assert[39m
+    [31m[1m>[22m[39m[90m 737 |[39m       expect(response[33m.
+[39mstatus)[33m.[39mtoBe([35m403[39m)[33m;[39m
+     [90m     |[39m                               
+[31m[1m^[22m[39m
+     [90m 738 |[39m     })[33m;[39m
+     [90m 739 |[39m   })[33m;[39m
+     [90m 740 |[39m[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:737:31)
+
+  ● E2E: Fields and Plots Flow › Complete Field-Plot Workflow › 
+should allow complete CRUD workflow for ADMIN
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 204
+    Received: 200
+
+    [0m [90m 823 |[39m         
+[33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m 
+[32m`Bearer ${admin.token}`[39m)[33m;[39m
+     [90m 824 |[39m
+    [31m[1m>[22m[39m[90m 825 |[39m       expect(deleteFieldResp
+onse[33m.[39mstatus)[33m.[39mtoBe([35m204[39m)[33m;[39m
+     [90m     |[39m                                          
+[31m[1m^[22m[39m
+     [90m 826 |[39m
+     [90m 827 |[39m       [90m// Step 7: Restore field[39m
+     [90m 828 |[39m       [36mconst[39m restoreFieldResponse 
+[33m=[39m [36mawait[39m request(app)[0m
+
+      at Object.<anonymous> (tests/e2e/fields-plots.test.ts:825:42)
+
+Test Suites: 2 failed, 2 total
+Tests:       29 failed, 47 passed, 76 total
+Snapshots:   0 total
+Time:        30.841 s, estimated 31 s
+Ran all test suites.

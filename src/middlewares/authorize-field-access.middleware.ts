@@ -190,7 +190,41 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
         }
 
         // ============================================================================
-        // VALIDACIÓN 3: Validar plots en POST y PUT de WorkOrders (CAPATAZ con campos gestionados)
+        // VALIDACIÓN 3: GET /fields (listado) - NO bloquear, solo aplicar filtros
+        // ============================================================================
+        if (req.method === 'GET' && req.originalUrl.match(/\/fields\/?(\?.*)?$/)) {
+          // Validar que si filtra por managerId, sea su propio ID
+          const { managerId } = req.query;
+          
+          if (managerId && managerId !== userId) {
+            return next(new HttpException(
+              StatusCodes.FORBIDDEN,
+              'Solo puedes filtrar por tus propios campos gestionados'
+            ));
+          }
+
+          // Agregar managedFieldIds para que el servicio filtre automáticamente
+          if (managedFieldIds.length > 0) {
+            req.requiredManagedFieldIds = managedFieldIds;
+          }
+          
+          return next();
+        }
+
+        // ============================================================================
+        // VALIDACIÓN 4: GET /plots (listado) - NO bloquear, solo aplicar filtros
+        // ============================================================================
+        if (req.method === 'GET' && req.originalUrl.match(/\/plots\/?(\?.*)?$/)) {
+          // Agregar managedFieldIds para que el servicio filtre automáticamente
+          if (managedFieldIds.length > 0) {
+            req.requiredManagedFieldIds = managedFieldIds;
+          }
+          
+          return next();
+        }
+
+        // ============================================================================
+        // VALIDACIÓN 5: Validar plots en POST y PUT de WorkOrders (CAPATAZ con campos gestionados)
         // Esta validación ocurre DESPUÉS de validar acceso a la OT (si aplica)
         // ============================================================================
         if ((req.method === 'POST' || req.method === 'PUT') && 
@@ -216,7 +250,9 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           }
         }
 
-        // Si está accediendo a una parcela específica, validar que pertenezca a sus campos
+        // ============================================================================
+        // VALIDACIÓN 6: Si está accediendo a una parcela específica (GET /plots/:id)
+        // ============================================================================
         if (req.params.id && (req.originalUrl.includes('/plots/') || req.path.includes('/plots/'))) {
           const plotId = req.params.id;
           const plotRepository = dataSource.getRepository(Plot);
@@ -228,19 +264,21 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           if (plot && !managedFieldIds.includes(plot.fieldId)) {
             return next(new HttpException(
               StatusCodes.FORBIDDEN,
-              'No tienes permisos para acceder a esta parcela'
+              'No tienes permisos para ver los detalles de esta parcela'
             ));
           }
         }
 
-        // Si está accediendo a un campo específico por ID, validar que lo gestione
+        // ============================================================================
+        // VALIDACIÓN 7: Si está accediendo a un campo específico (GET /fields/:id)
+        // ============================================================================
         if (req.params.id && (req.originalUrl.includes('/fields/') || req.path.includes('/fields/'))) {
           const fieldId = req.params.id;
           
           if (!managedFieldIds.includes(fieldId)) {
             return next(new HttpException(
               StatusCodes.FORBIDDEN,
-              'No tienes permisos para acceder a este campo'
+              'No tienes permisos para ver los detalles de este campo'
             ));
           }
         }

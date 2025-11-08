@@ -7,6 +7,13 @@ import { HttpException } from "../exceptions/HttpException";
 import { DataSource, Repository } from "typeorm";
 import { UserRole } from "@/enums";
 
+interface GetAllFieldsOptions {
+  includeFullDetails?: boolean;
+  filters?: FieldFilters;
+  userId?: string;
+  userRole?: UserRole;
+}
+
 export class FieldService {
   private fieldRepository: Repository<Field>;
   private userRepository: Repository<User>;
@@ -47,51 +54,83 @@ export class FieldService {
   }
 
   /**
-   * Obtener todos los campos con filtros opcionales
-   * @param filters Filtros opcionales para la búsqueda
-   * @returns Promise<Field[]>
+   * Obtener todos los campos con proyección adaptativa según contexto
+   * @param options Opciones de búsqueda y proyección
+   * @returns Promise<{ data: Field[] | Partial<Field>[]; count: number }>
+   * 
+   * Comportamiento:
+   * - Sin filtros + sin includeFullDetails → Solo datos de mapa (id, name, location)
+   * - Con filtros o ADMIN o includeFullDetails → Datos completos (area, address, manager, plots)
    * 
    * Ejemplos de uso:
-   * - findAll() → Todos los campos
-   * - findAll({ managerId: '123' }) → Campos de un encargado específico
-   * - findAll({ minArea: 100, maxArea: 500 }) → Campos por rango de área
+   * - findAll() → Todos los campos (solo mapa)
+   * - findAll({ includeFullDetails: true }) → Todos los campos (datos completos)
+   * - findAll({ filters: { managerId: '123' } }) → Campos de encargado (datos completos)
+   * - findAll({ filters: { managedFieldIds: [...] }, userRole: UserRole.CAPATAZ }) → Campos del CAPATAZ (datos completos)
    */
-  public async findAll(filters?: FieldFilters): Promise<Field[]> {
+  public async findAll(options: GetAllFieldsOptions = {}): Promise<{ data: (Field | Partial<Field>)[]; count: number }> {
+    const { includeFullDetails = false, filters = {}, userId, userRole } = options;
+
     const queryBuilder = this.fieldRepository
-      .createQueryBuilder('field')
-      .leftJoinAndSelect('field.manager', 'manager')
-      .leftJoinAndSelect('field.plots', 'plots');
+      .createQueryBuilder('field');
 
-    if (filters) {
-      if (filters.managerId) {
-        queryBuilder.andWhere('field.managerId = :managerId', {
-          managerId: filters.managerId
-        });
-      }
+    // Determinar si debe incluir detalles completos
+    const hasFilters = 
+      filters.managerId !== undefined ||
+      filters.managedFieldIds !== undefined ||
+      filters.minArea !== undefined ||
+      filters.maxArea !== undefined;
 
-      if (filters.minArea) {
-        queryBuilder.andWhere('field.area >= :minArea', {
-          minArea: filters.minArea
-        });
-      }
+    const shouldIncludeDetails = 
+      includeFullDetails || 
+      userRole === UserRole.ADMIN ||
+      hasFilters;
 
-      if (filters.maxArea) {
-        queryBuilder.andWhere('field.area <= :maxArea', {
-          maxArea: filters.maxArea
-        });
-      }
+    if (shouldIncludeDetails) {
+      // Datos completos: incluir relaciones y todos los campos
+      queryBuilder
+        .leftJoinAndSelect('field.manager', 'manager')
+        .leftJoinAndSelect('field.plots', 'plots');
+    } else {
+      // Solo datos de mapa: proyección limitada
+      queryBuilder.select([
+        'field.id',
+        'field.name',
+        'field.location',
+      ]);
+    }
 
-      // Filtro especial para CAPATAZ: Solo campos gestionados por él
-      if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
-        queryBuilder.andWhere('field.id IN (:...managedFieldIds)', {
-          managedFieldIds: filters.managedFieldIds
-        });
-      }
+    // Aplicar filtros
+    if (filters.managerId) {
+      queryBuilder.andWhere('field.managerId = :managerId', {
+        managerId: filters.managerId
+      });
+    }
+
+    if (filters.minArea) {
+      queryBuilder.andWhere('field.area >= :minArea', {
+        minArea: filters.minArea
+      });
+    }
+
+    if (filters.maxArea) {
+      queryBuilder.andWhere('field.area <= :maxArea', {
+        maxArea: filters.maxArea
+      });
+    }
+
+    // Filtro especial para CAPATAZ: Solo campos gestionados por él
+    if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
+      queryBuilder.andWhere('field.id IN (:...managedFieldIds)', {
+        managedFieldIds: filters.managedFieldIds
+      });
     }
 
     queryBuilder.orderBy('field.createdAt', 'DESC');
 
-    return await queryBuilder.getMany();
+    const [data, count] = await queryBuilder.getManyAndCount();
+
+    return { data, count };
   }
   
   /**

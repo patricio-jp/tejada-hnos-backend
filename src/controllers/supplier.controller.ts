@@ -5,6 +5,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { SupplierFilters } from '@/interfaces/filters.interface';
 import { isValidUUID } from '@/utils/validation.utils';
+import { instanceToPlain } from 'class-transformer';
 
 export class SupplierController {
   constructor(private supplierService: SupplierService) {}
@@ -41,7 +42,7 @@ export class SupplierController {
       const suppliers = await this.supplierService.findAll(filters);
 
       res.status(StatusCodes.OK).json({
-        data: suppliers,
+        data: instanceToPlain(suppliers),
         count: suppliers.length,
         message: 'Proveedores obtenidos exitosamente',
       });
@@ -73,7 +74,7 @@ export class SupplierController {
 
       res.status(StatusCodes.OK).json({
         message: 'Proveedor obtenido exitosamente',
-        data: supplier,
+        data: instanceToPlain(supplier),
       });
     } catch (error) {
       next(error);
@@ -91,7 +92,7 @@ export class SupplierController {
 
       res.status(StatusCodes.CREATED).json({
         message: 'Proveedor creado exitosamente',
-        data: supplier,
+        data: instanceToPlain(supplier),
       });
     } catch (error) {
       next(error);
@@ -119,7 +120,7 @@ export class SupplierController {
 
       res.status(StatusCodes.OK).json({
         message: 'Proveedor actualizado exitosamente',
-        data: supplier,
+        data: instanceToPlain(supplier),
       });
     } catch (error) {
       next(error);
@@ -146,7 +147,7 @@ export class SupplierController {
 
       res.status(StatusCodes.OK).json({
         message: 'Proveedor eliminado exitosamente',
-        data: supplier,
+        data: instanceToPlain(supplier),
         canRestore: true,
       });
     } catch (error) {
@@ -174,7 +175,7 @@ export class SupplierController {
 
       res.status(StatusCodes.OK).json({
         message: 'Proveedor restaurado exitosamente',
-        data: supplier,
+        data: instanceToPlain(supplier),
       });
     } catch (error) {
       next(error);
@@ -201,7 +202,7 @@ export class SupplierController {
 
       res.status(StatusCodes.OK).json({
         message: 'Proveedor eliminado permanentemente',
-        data: supplier,
+        data: instanceToPlain(supplier),
         canRestore: false,
       });
     } catch (error) {

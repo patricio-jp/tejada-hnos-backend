@@ -4,6 +4,7 @@ import { CreateUserDto, UpdateUserDto } from '@/dtos/user.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { DataSource } from 'typeorm';
+import { instanceToPlain } from 'class-transformer';
 
 export class UserController {
   private userService: UserService;
@@ -21,7 +22,7 @@ export class UserController {
       const users = await this.userService.getAll();
 
       res.status(StatusCodes.OK).json({
-        data: users,
+        data: instanceToPlain(users),
         count: users.length,
         message: 'Usuarios obtenidos exitosamente.',
       });
@@ -45,7 +46,7 @@ export class UserController {
       const user = await this.userService.getById(id);
 
       res.status(StatusCodes.OK).json({
-        data: user,
+        data: instanceToPlain(user),
         message: 'Usuario obtenido exitosamente.',
       });
     } catch (error) {
@@ -63,7 +64,7 @@ export class UserController {
       const newUser = await this.userService.create(userData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newUser,
+        data: instanceToPlain(newUser),
         message: 'Usuario creado exitosamente.',
       });
     } catch (error) {
@@ -87,7 +88,7 @@ export class UserController {
       const updatedUser = await this.userService.update(id, userData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedUser,
+        data: instanceToPlain(updatedUser),
         message: 'Usuario actualizado exitosamente.',
       });
     } catch (error) {
@@ -110,7 +111,7 @@ export class UserController {
       const deletedUser = await this.userService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedUser,
+        data: instanceToPlain(deletedUser),
         message: 'Usuario eliminado exitosamente.',
         canRestore: true,
       });
@@ -134,7 +135,7 @@ export class UserController {
       const restoredUser = await this.userService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredUser,
+        data: instanceToPlain(restoredUser),
         message: 'Usuario restaurado exitosamente.',
       });
     } catch (error) {
@@ -157,7 +158,7 @@ export class UserController {
       const deletedUser = await this.userService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedUser,
+        data: instanceToPlain(deletedUser),
         message: 'Usuario eliminado permanentemente.',
         canRestore: false,
       });

@@ -2,13 +2,18 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateCol
 import { HarvestLot } from './harvest-lot.entity';
 import { Shipment } from './shipment.entity';
 import { SalesOrderDetail } from './sale-order-detail.entity';
+import { Transform } from 'class-transformer';
 
 @Entity('shipment_lot_details')
 export class ShipmentLotDetail {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   quantityTakenKg: number;
 
   @CreateDateColumn()

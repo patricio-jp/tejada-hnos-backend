@@ -6,6 +6,7 @@ import { StatusCodes } from "http-status-codes";
 import { CreateActivityDto, UpdateActivityDto } from "@/dtos/activity.dto";
 import { ActivityFilters } from "@/interfaces/filters.interface";
 import { ActivityType, ActivityStatus, UserRole } from "@/enums";
+import { instanceToPlain } from "class-transformer";
 
 export class ActivityController {
   private activityService: ActivityService;
@@ -62,7 +63,7 @@ export class ActivityController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: activities,
+        data: instanceToPlain(activities),
         count: activities.length,
         message: 'Actividades obtenidas exitosamente.',
       });
@@ -86,7 +87,7 @@ export class ActivityController {
       const activity = await this.activityService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: activity,
+        data: instanceToPlain(activity),
         message: 'Actividad obtenida exitosamente.',
       });
     } catch (error) {
@@ -119,7 +120,7 @@ export class ActivityController {
       const newActivity = await this.activityService.create(activityData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newActivity,
+        data: instanceToPlain(newActivity),
         message: 'Actividad creada exitosamente.',
       });
     } catch (error) {
@@ -180,7 +181,7 @@ export class ActivityController {
       const updatedActivity = await this.activityService.update(id, activityData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedActivity,
+        data: instanceToPlain(updatedActivity),
         message: 'Actividad actualizada exitosamente.',
       });
     } catch (error) {
@@ -203,7 +204,7 @@ export class ActivityController {
       const deletedActivity = await this.activityService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedActivity,
+        data: instanceToPlain(deletedActivity),
         message: 'Actividad eliminada exitosamente.',
         canRestore: true,
       });
@@ -227,7 +228,7 @@ export class ActivityController {
       const restoredActivity = await this.activityService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredActivity,
+        data: instanceToPlain(restoredActivity),
         message: 'Actividad restaurada exitosamente.',
       });
     } catch (error) {
@@ -250,7 +251,7 @@ export class ActivityController {
       const deletedActivity = await this.activityService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedActivity,
+        data: instanceToPlain(deletedActivity),
         message: 'Actividad eliminada permanentemente.',
         canRestore: false,
       });

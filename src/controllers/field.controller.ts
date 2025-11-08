@@ -6,6 +6,7 @@ import { CreateFieldDto, UpdateFieldDto } from '@dtos/field.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { DataSource } from 'typeorm';
 import { UserRole } from '@/enums';
+import { instanceToPlain } from 'class-transformer';
 
 export class FieldController {
   private fieldService: FieldService;
@@ -58,7 +59,7 @@ export class FieldController {
       });
 
       res.status(StatusCodes.OK).json({
-        data: result.data,
+        data: instanceToPlain(result.data),
         count: result.count,
         message: 'Campos obtenidos exitosamente.',
       });
@@ -82,7 +83,7 @@ export class FieldController {
       const field = await this.fieldService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: field,
+        data: instanceToPlain(field),
         message: 'Campo obtenido exitosamente.',
       });
     } catch (error) {
@@ -100,7 +101,7 @@ export class FieldController {
       const newField = await this.fieldService.create(fieldData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newField,
+        data: instanceToPlain(newField),
         message: 'Campo creado exitosamente.',
       });
     } catch (error) {
@@ -124,7 +125,7 @@ export class FieldController {
       const updatedField = await this.fieldService.update(id, fieldData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedField,
+        data: instanceToPlain(updatedField),
         message: 'Campo actualizado exitosamente.',
       });
     } catch (error) {
@@ -147,7 +148,7 @@ export class FieldController {
       const deletedField = await this.fieldService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedField,
+        data: instanceToPlain(deletedField),
         message: 'Campo eliminado exitosamente.',
         canRestore: true,
       });
@@ -171,7 +172,7 @@ export class FieldController {
       const restoredField = await this.fieldService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredField,
+        data: instanceToPlain(restoredField),
         message: 'Campo restaurado exitosamente.',
       });
     } catch (error) {
@@ -194,7 +195,7 @@ export class FieldController {
       const deletedField = await this.fieldService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedField,
+        data: instanceToPlain(deletedField),
         message: 'Campo eliminado permanentemente.',
         canRestore: false,
       });

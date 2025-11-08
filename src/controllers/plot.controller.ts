@@ -6,6 +6,7 @@ import { CreatePlotDto, UpdatePlotDto } from '@dtos/plot.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { UserRole } from '@/enums';
+import { instanceToPlain } from 'class-transformer';
 
 export class PlotController {
   private plotService: PlotService;
@@ -62,7 +63,7 @@ export class PlotController {
       });
 
       res.status(StatusCodes.OK).json({
-        data: result.data,
+        data: instanceToPlain(result.data),
         count: result.count,
         message: 'Parcelas obtenidas exitosamente.',
       });
@@ -86,7 +87,7 @@ export class PlotController {
       const plot = await this.plotService.getPlotById(id);
 
       res.status(StatusCodes.OK).json({
-        data: plot,
+        data: instanceToPlain(plot),
         message: 'Parcela obtenida exitosamente.',
       });
     } catch (error) {
@@ -104,7 +105,7 @@ export class PlotController {
       const newPlot = await this.plotService.createPlot(plotData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newPlot,
+        data: instanceToPlain(newPlot),
         message: 'Parcela creada exitosamente.',
       });
     } catch (error) {
@@ -128,7 +129,7 @@ export class PlotController {
       const updatedPlot = await this.plotService.updatePlot(id, plotData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedPlot,
+        data: instanceToPlain(updatedPlot),
         message: 'Parcela actualizada exitosamente.',
       });
     } catch (error) {
@@ -151,7 +152,7 @@ export class PlotController {
       const deletedPlot = await this.plotService.deletePlot(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedPlot,
+        data: instanceToPlain(deletedPlot),
         message: 'Parcela eliminada exitosamente.',
         canRestore: true,
       });
@@ -175,7 +176,7 @@ export class PlotController {
       const restoredPlot = await this.plotService.restorePlot(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredPlot,
+        data: instanceToPlain(restoredPlot),
         message: 'Parcela restaurada exitosamente.',
       });
     } catch (error) {
@@ -198,7 +199,7 @@ export class PlotController {
       const deletedPlot = await this.plotService.hardDeletePlot(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedPlot,
+        data: instanceToPlain(deletedPlot),
         message: 'Parcela eliminada permanentemente.',
         canRestore: false,
       });

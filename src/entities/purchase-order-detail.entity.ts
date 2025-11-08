@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, JoinColum
 import { Input } from "./input.entity";
 import { PurchaseOrder } from "./purchase-order.entity";
 import { GoodsReceiptDetail } from "./goods-receipt-detail.entity";
+import { Transform } from "class-transformer";
 
 @Entity('purchase_order_details')
 export class PurchaseOrderDetail {
@@ -22,10 +23,18 @@ export class PurchaseOrderDetail {
   @JoinColumn({ name: 'inputId' })
   input: Input;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   quantity: number; // Cantidad pedida
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   unitPrice: number; // Precio de compra
 
   @OneToMany(() => GoodsReceiptDetail, detail => detail.purchaseOrderDetail)

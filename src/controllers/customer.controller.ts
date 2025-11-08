@@ -5,6 +5,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { CustomerFilters } from '@/interfaces/filters.interface';
 import { isValidUUID } from '@/utils/validation.utils';
+import { instanceToPlain } from 'class-transformer';
 
 export class CustomerController {
   constructor(private customerService: CustomerService) {}
@@ -41,7 +42,7 @@ export class CustomerController {
       const customers = await this.customerService.findAll(filters);
 
       res.status(StatusCodes.OK).json({
-        data: customers,
+        data: instanceToPlain(customers),
         count: customers.length,
         message: 'Clientes obtenidos exitosamente',
       });
@@ -73,7 +74,7 @@ export class CustomerController {
 
       res.status(StatusCodes.OK).json({
         message: 'Cliente obtenido exitosamente',
-        data: customer,
+        data: instanceToPlain(customer),
       });
     } catch (error) {
       next(error);
@@ -91,7 +92,7 @@ export class CustomerController {
 
       res.status(StatusCodes.CREATED).json({
         message: 'Cliente creado exitosamente',
-        data: customer,
+        data: instanceToPlain(customer),
       });
     } catch (error) {
       next(error);
@@ -122,7 +123,7 @@ export class CustomerController {
 
       res.status(StatusCodes.OK).json({
         message: 'Cliente actualizado exitosamente',
-        data: customer,
+        data: instanceToPlain(customer),
       });
     } catch (error) {
       next(error);
@@ -152,7 +153,7 @@ export class CustomerController {
 
       res.status(StatusCodes.OK).json({
         message: 'Cliente eliminado exitosamente',
-        data: customer,
+        data: instanceToPlain(customer),
         canRestore: true,
       });
     } catch (error) {
@@ -183,7 +184,7 @@ export class CustomerController {
 
       res.status(StatusCodes.OK).json({
         message: 'Cliente restaurado exitosamente',
-        data: customer,
+        data: instanceToPlain(customer),
       });
     } catch (error) {
       next(error);
@@ -213,7 +214,7 @@ export class CustomerController {
 
       res.status(StatusCodes.OK).json({
         message: 'Cliente eliminado permanentemente',
-        data: customer,
+        data: instanceToPlain(customer),
         canRestore: false,
       });
     } catch (error) {

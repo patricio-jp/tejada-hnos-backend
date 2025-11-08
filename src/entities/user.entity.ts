@@ -2,6 +2,7 @@ import { UserRole } from '@/enums';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
 import { Field } from './field.entity';
 import { WorkOrder } from './work-order.entity';
+import { Transform } from 'class-transformer';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -26,7 +27,11 @@ export class User {
   @Column({ select: false })
   passwordHash: string;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   hourlyRate: number; // Costo por hora para reportes
 
   @OneToMany(() => WorkOrder, order => order.assignedTo)

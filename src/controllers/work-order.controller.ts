@@ -6,6 +6,7 @@ import { CreateWorkOrderDto, UpdateWorkOrderDto } from '@dtos/work-order.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { DataSource } from 'typeorm';
 import { WorkOrderStatus } from '@/enums';
+import { instanceToPlain } from 'class-transformer';
 
 export class WorkOrderController {
   private workOrderService: WorkOrderService;
@@ -57,7 +58,7 @@ export class WorkOrderController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: workOrders,
+        data: instanceToPlain(workOrders),
         count: workOrders.length,
         message: 'Órdenes de trabajo obtenidas exitosamente.',
       });
@@ -81,7 +82,7 @@ export class WorkOrderController {
       const workOrder = await this.workOrderService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: workOrder,
+        data: instanceToPlain(workOrder),
         message: 'Orden de trabajo obtenida exitosamente.',
       });
     } catch (error) {
@@ -99,7 +100,7 @@ export class WorkOrderController {
       const newWorkOrder = await this.workOrderService.create(workOrderData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newWorkOrder,
+        data: instanceToPlain(newWorkOrder),
         message: 'Orden de trabajo creada exitosamente.',
       });
     } catch (error) {
@@ -123,7 +124,7 @@ export class WorkOrderController {
       const updatedWorkOrder = await this.workOrderService.update(id, workOrderData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedWorkOrder,
+        data: instanceToPlain(updatedWorkOrder),
         message: 'Orden de trabajo actualizada exitosamente.',
       });
     } catch (error) {
@@ -146,7 +147,7 @@ export class WorkOrderController {
       const deletedWorkOrder = await this.workOrderService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedWorkOrder,
+        data: instanceToPlain(deletedWorkOrder),
         message: 'Orden de trabajo eliminada exitosamente.',
         canRestore: true,
       });
@@ -170,7 +171,7 @@ export class WorkOrderController {
       const restoredWorkOrder = await this.workOrderService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredWorkOrder,
+        data: instanceToPlain(restoredWorkOrder),
         message: 'Orden de trabajo restaurada exitosamente.',
       });
     } catch (error) {
@@ -193,7 +194,7 @@ export class WorkOrderController {
       const deletedWorkOrder = await this.workOrderService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedWorkOrder,
+        data: instanceToPlain(deletedWorkOrder),
         message: 'Orden de trabajo eliminada permanentemente.',
         canRestore: false,
       });

@@ -23,7 +23,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
     try {
       // Verificar que el usuario esté autenticado
       if (!req.user) {
-        throw new HttpException(StatusCodes.UNAUTHORIZED, 'Usuario no autenticado');
+        return next(new HttpException(StatusCodes.UNAUTHORIZED, 'Usuario no autenticado'));
       }
 
       const { role, userId } = req.user;
@@ -41,7 +41,7 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
       });
 
       if (!user) {
-        throw new HttpException(StatusCodes.NOT_FOUND, 'Usuario no encontrado');
+        return next(new HttpException(StatusCodes.NOT_FOUND, 'Usuario no encontrado'));
       }
 
       // Extraer IDs de campos gestionados
@@ -51,10 +51,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
       if (role === UserRole.OPERARIO) {
         // Si está filtrando por assignedToId en query params, validar que sea el mismo usuario
         if (req.query.assignedToId && req.query.assignedToId !== userId) {
-          throw new HttpException(
+          return next(new HttpException(
             StatusCodes.FORBIDDEN,
             'Un operario solo puede ver sus propias órdenes de trabajo'
-          );
+          ));
         }
 
         // Forzar filtro de assignedToId usando una propiedad personalizada del request
@@ -69,10 +69,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           });
 
           if (workOrder && workOrder.assignedToId !== userId) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para acceder a esta orden de trabajo'
-            );
+            ));
           }
         }
 
@@ -87,10 +87,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           });
 
           if (activity && activity.workOrder.assignedToId !== userId) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para acceder a esta actividad'
-            );
+            ));
           }
         }
 
@@ -113,10 +113,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           });
 
           if (!workOrder) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.NOT_FOUND,
               'La orden de trabajo no fue encontrada'
-            );
+            ));
           }
 
           // Validar que el CAPATAZ tenga acceso:
@@ -127,10 +127,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
             workOrder.plots?.some(plot => managedFieldIds.includes(plot.fieldId));
 
           if (!isAssignedToHim && !hasAccessToPlots) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para acceder a esta orden de trabajo'
-            );
+            ));
           }
         }
 
@@ -148,10 +148,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           });
 
           if (!activity) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.NOT_FOUND,
               'La actividad no fue encontrada'
-            );
+            ));
           }
 
           // Validar que el CAPATAZ tenga acceso a la WorkOrder de esta actividad:
@@ -162,10 +162,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
             activity.workOrder.plots?.some(plot => managedFieldIds.includes(plot.fieldId));
 
           if (!isAssignedToHim && !hasAccessToPlots) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para acceder a esta actividad'
-            );
+            ));
           }
         }
 
@@ -179,10 +179,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
               // Auto-asignar al capataz si no especifica usuario
               req.body.assignedToUserId = userId;
             } else if (req.body.assignedToUserId && req.body.assignedToUserId !== userId) {
-              throw new HttpException(
+              return next(new HttpException(
                 StatusCodes.FORBIDDEN,
                 'Un capataz sin campos gestionados solo puede crear órdenes asignadas a sí mismo'
-              );
+              ));
             }
           }
 
@@ -208,10 +208,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
             
             if (unauthorizedPlots.length > 0) {
               const plotNames = unauthorizedPlots.map(p => p.name || p.id).join(', ');
-              throw new HttpException(
+              return next(new HttpException(
                 StatusCodes.FORBIDDEN,
                 `No tienes permisos para asignar las siguientes parcelas: ${plotNames}. Solo puedes asignar parcelas de los campos que gestionas.`
-              );
+              ));
             }
           }
         }
@@ -226,10 +226,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           });
 
           if (plot && !managedFieldIds.includes(plot.fieldId)) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para acceder a esta parcela'
-            );
+            ));
           }
         }
 
@@ -238,10 +238,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           const fieldId = req.params.id;
           
           if (!managedFieldIds.includes(fieldId)) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para acceder a este campo'
-            );
+            ));
           }
         }
 
@@ -253,10 +253,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           });
 
           if (plot && !managedFieldIds.includes(plot.fieldId)) {
-            throw new HttpException(
+            return next(new HttpException(
               StatusCodes.FORBIDDEN,
               'No tienes permisos para ver órdenes de trabajo de esta parcela'
-            );
+            ));
           }
         }
 
@@ -267,10 +267,10 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
       }
 
       // Si llegamos aquí, el rol no está manejado
-      throw new HttpException(
+      return next(new HttpException(
         StatusCodes.FORBIDDEN,
         'Rol de usuario no válido para esta operación'
-      );
+      ));
     } catch (error) {
       next(error);
     }

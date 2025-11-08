@@ -3,6 +3,7 @@ import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMan
 import { WorkOrder } from "./work-order.entity";
 import { ActivityDetails } from "@/types";
 import { InputUsage } from "./input-usage.entity";
+import { Transform } from "class-transformer";
 
 @Entity('activities')
 export class Activity {
@@ -29,7 +30,11 @@ export class Activity {
   @Column('timestamp')
   executionDate: Date;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column('decimal', { precision: 5, scale: 2, default: 0, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   hoursWorked: number;
 
   @Column({ type: 'jsonb', default: {} })

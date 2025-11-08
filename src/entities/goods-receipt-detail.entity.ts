@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, JoinColumn } from "typeorm";
 import { GoodsReceipt } from "./goods-receipt.entity";
 import { PurchaseOrderDetail } from "./purchase-order-detail.entity";
+import { Transform } from "class-transformer";
 
 @Entity('goods_receipt_details')
 export class GoodsReceiptDetail {
@@ -21,7 +22,11 @@ export class GoodsReceiptDetail {
   @JoinColumn({ name: 'purchaseOrderDetailId' })
   purchaseOrderDetail: PurchaseOrderDetail;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   quantityReceived: number; // Cantidad recibida en este remito
 
   @Column('text', { nullable: true })

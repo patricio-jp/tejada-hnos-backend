@@ -5,6 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import { HttpException } from "@/exceptions/HttpException";
 import { CreateVarietyDto, UpdateVarietyDto } from "@/dtos/variety.dto";
 import { isValidUUID } from "@/utils/validation.utils";
+import { instanceToPlain } from "class-transformer";
 
 export class VarietyController {
   private varietyService: VarietyService;
@@ -21,7 +22,7 @@ export class VarietyController {
     try {
       const varieties = await this.varietyService.findAll();
       res.status(StatusCodes.OK).json({
-        data: varieties,
+        data: instanceToPlain(varieties),
         count: varieties.length,
         message: "Variedades obtenidas exitosamente",
       });
@@ -53,7 +54,7 @@ export class VarietyController {
       
       res.status(StatusCodes.OK).json({
         message: "Variedad obtenida exitosamente",
-        data: variety,
+        data: instanceToPlain(variety),
       });
     } catch (error) {
       next(error);
@@ -71,7 +72,7 @@ export class VarietyController {
       
       res.status(StatusCodes.CREATED).json({
         message: "Variedad creada exitosamente",
-        data: newVariety,
+        data: instanceToPlain(newVariety),
       });
     } catch (error) {
       next(error);
@@ -102,7 +103,7 @@ export class VarietyController {
 
       res.status(StatusCodes.OK).json({
         message: "Variedad actualizada exitosamente",
-        data: updatedVariety,
+        data: instanceToPlain(updatedVariety),
       });
     } catch (error) {
       next(error);
@@ -132,7 +133,7 @@ export class VarietyController {
 
       res.status(StatusCodes.OK).json({
         message: "Variedad eliminada exitosamente",
-        data: deletedVariety,
+        data: instanceToPlain(deletedVariety),
         canRestore: false,
       });
     } catch (error) {

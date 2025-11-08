@@ -5,6 +5,7 @@ import { CreateHarvestLotDto, UpdateHarvestLotDto } from '@dtos/harvest-lot.dto'
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { HarvestLotStatus } from '@/enums';
+import { instanceToPlain } from 'class-transformer';
 
 export class HarvestLotController {
   private harvestLotService: HarvestLotService;
@@ -24,7 +25,7 @@ export class HarvestLotController {
       const harvestLot = await this.harvestLotService.create(createHarvestLotDto);
 
       res.status(StatusCodes.CREATED).json({
-        data: harvestLot,
+        data: instanceToPlain(harvestLot),
         message: 'Lote de cosecha creado exitosamente.'
       });
     } catch (error) {
@@ -73,7 +74,7 @@ export class HarvestLotController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: harvestLots,
+        data: instanceToPlain(harvestLots),
         count: harvestLots.length,
         message: 'Lotes de cosecha obtenidos exitosamente.'
       });
@@ -97,7 +98,7 @@ export class HarvestLotController {
       const harvestLot = await this.harvestLotService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: harvestLot,
+        data: instanceToPlain(harvestLot),
         message: 'Lote de cosecha obtenido exitosamente.'
       });
     } catch (error) {
@@ -121,7 +122,7 @@ export class HarvestLotController {
       const harvestLot = await this.harvestLotService.update(id, updateHarvestLotDto);
 
       res.status(StatusCodes.OK).json({
-        data: harvestLot,
+        data: instanceToPlain(harvestLot),
         message: 'Lote de cosecha actualizado exitosamente.'
       });
     } catch (error) {
@@ -141,10 +142,12 @@ export class HarvestLotController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID del lote es obligatorio.');
       }
 
-      await this.harvestLotService.delete(id);
+      const deletedHarvestLot = await this.harvestLotService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        message: 'Lote de cosecha eliminado exitosamente.'
+        data: instanceToPlain(deletedHarvestLot),
+        message: 'Lote de cosecha eliminado exitosamente.',
+        canRestore: true
       });
     } catch (error) {
       next(error);
@@ -166,7 +169,7 @@ export class HarvestLotController {
       const harvestLot = await this.harvestLotService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: harvestLot,
+        data: instanceToPlain(harvestLot),
         message: 'Lote de cosecha restaurado exitosamente.'
       });
     } catch (error) {
@@ -189,7 +192,7 @@ export class HarvestLotController {
       const harvestLots = await this.harvestLotService.findAll({ plotId });
 
       res.status(StatusCodes.OK).json({
-        data: harvestLots,
+        data: instanceToPlain(harvestLots),
         count: harvestLots.length,
         message: 'Lotes de cosecha obtenidos exitosamente.'
       });
@@ -210,10 +213,12 @@ export class HarvestLotController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID del lote es obligatorio.');
       }
 
-      await this.harvestLotService.hardDelete(id);
+      const deletedHarvestLot = await this.harvestLotService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        message: 'Lote de cosecha eliminado permanentemente.'
+        data: instanceToPlain(deletedHarvestLot),
+        message: 'Lote de cosecha eliminado permanentemente.',
+        canRestore: false
       });
     } catch (error) {
       next(error);

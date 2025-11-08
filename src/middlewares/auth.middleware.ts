@@ -8,6 +8,7 @@ declare global {
     interface Request {
       user?: TokenPayload;
       managedFieldIds?: string[];
+      requiredManagedFieldIds?: string[]; // Para forzar el filtro managedFieldIds en CAPATAZ (GET all)
       requiredAssignedToId?: string; // Para forzar el filtro assignedToId en OPERARIO
     }
   }

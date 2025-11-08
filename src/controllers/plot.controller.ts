@@ -5,6 +5,7 @@ import { PlotFilters } from '@/interfaces/filters.interface';
 import { CreatePlotDto, UpdatePlotDto } from '@dtos/plot.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
+import { UserRole } from '@/enums';
 
 export class PlotController {
   private plotService: PlotService;
@@ -15,7 +16,14 @@ export class PlotController {
 
   /**
    * GET /plots
-   * Obtener todas las parcelas con filtros opcionales
+   * Obtener todas las parcelas (adaptativo según contexto)
+   * @query ?fieldId=123&varietyId=456&minArea=50&maxArea=200
+   * @access Authenticated users
+   * 
+   * Comportamiento:
+   * - Sin filtros → Retorna solo datos de mapa (id, name, location)
+   * - Con filtros → Retorna datos completos (según permisos validados por middleware)
+   * - ADMIN → Siempre datos completos
    */
   public getPlots = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -38,17 +46,24 @@ export class PlotController {
       }
 
       // Agregar managedFieldIds desde el middleware de autorización (para CAPATAZ)
-      if (req.managedFieldIds && req.managedFieldIds.length > 0) {
-        filters.managedFieldIds = req.managedFieldIds;
+      if (req.requiredManagedFieldIds && req.requiredManagedFieldIds.length > 0) {
+        filters.managedFieldIds = req.requiredManagedFieldIds;
       }
 
-      const plots = await this.plotService.getAllPlots(
-        Object.keys(filters).length > 0 ? filters : undefined
-      );
+      // Determinar si debe incluir detalles completos
+      const hasFilters = Object.keys(req.query).length > 0;
+      const includeFullDetails = hasFilters || req.user?.role === UserRole.ADMIN;
+
+      const result = await this.plotService.getAllPlots({
+        filters,
+        includeFullDetails,
+        ...(req.user?.userId && { userId: req.user.userId }),
+        ...(req.user?.role && { userRole: req.user.role }),
+      });
 
       res.status(StatusCodes.OK).json({
-        data: plots,
-        count: plots.length,
+        data: result.data,
+        count: result.count,
         message: 'Parcelas obtenidas exitosamente.',
       });
     } catch (error) {

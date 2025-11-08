@@ -94,6 +94,29 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
           }
         }
 
+        // Si está accediendo a fields o plots, bloquear acceso (OPERARIO no gestiona campos)
+        const isAccessingFieldsOrPlots = 
+          req.originalUrl.includes('/fields') || 
+          req.path.includes('/fields') ||
+          req.originalUrl.includes('/plots') || 
+          req.path.includes('/plots');
+        
+        if (isAccessingFieldsOrPlots) {
+          // Para listados (GET /fields o GET /plots), permitir pero con array vacío (mapa)
+          if ((req.method === 'GET' && req.originalUrl.match(/\/fields\/?(\?.*)?$/)) ||
+              (req.method === 'GET' && req.originalUrl.match(/\/plots\/?(\?.*)?$/))) {
+            req.requiredManagedFieldIds = []; // Array vacío = no verá ningún field/plot en resultados filtrados
+            return next();
+          }
+          
+          // Para acceso individual (GET /fields/:id o GET /plots/:id), bloquear
+          const resourceType = req.originalUrl.includes('/fields') || req.path.includes('/fields') ? 'campo' : 'parcela';
+          return next(new HttpException(
+            StatusCodes.FORBIDDEN,
+            `No tienes permisos para ver los detalles de este ${resourceType}`
+          ));
+        }
+
         return next();
       }
 
@@ -184,6 +207,29 @@ export const authorizeFieldAccess = (dataSource: DataSource) => {
                 'Un capataz sin campos gestionados solo puede crear órdenes asignadas a sí mismo'
               ));
             }
+          }
+
+          // Si está accediendo a fields o plots, bloquear acceso (no gestiona ningún campo)
+          const isAccessingFieldsOrPlots = 
+            req.originalUrl.includes('/fields') || 
+            req.path.includes('/fields') ||
+            req.originalUrl.includes('/plots') || 
+            req.path.includes('/plots');
+          
+          if (isAccessingFieldsOrPlots) {
+            // Para listados (GET /fields o GET /plots), permitir pero con array vacío
+            if ((req.method === 'GET' && req.originalUrl.match(/\/fields\/?(\?.*)?$/)) ||
+                (req.method === 'GET' && req.originalUrl.match(/\/plots\/?(\?.*)?$/))) {
+              req.requiredManagedFieldIds = []; // Array vacío = no verá ningún field/plot
+              return next();
+            }
+            
+            // Para acceso individual (GET /fields/:id o GET /plots/:id), bloquear
+            const resourceType = req.originalUrl.includes('/fields') || req.path.includes('/fields') ? 'campo' : 'parcela';
+            return next(new HttpException(
+              StatusCodes.FORBIDDEN,
+              `No tienes permisos para ver los detalles de este ${resourceType}`
+            ));
           }
 
           return next();

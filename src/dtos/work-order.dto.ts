@@ -31,9 +31,8 @@ export class CreateWorkOrderDto {
   assignedToUserId?: string;
 
   @IsOptional()
-  @ValidateNested()
   @IsUUID('4', { each: true, message: 'Cada ID de parcela debe ser un UUID válido' })
-  plotIds: string[];
+  plotIds?: string[];
 }
 
 export class UpdateWorkOrderDto {
@@ -62,7 +61,6 @@ export class UpdateWorkOrderDto {
   assignedToUserId?: string | null;
   
   @IsOptional()
-  @ValidateNested()
   @IsUUID('4', { each: true, message: 'Cada ID de parcela debe ser un UUID válido' })
   plotIds?: string[];
 }

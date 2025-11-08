@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { InputService } from '@services/input.service';
 import { CreateInputDto } from '@dtos/input.dto';
+import { instanceToPlain } from 'class-transformer';
 
 export class InputController {
   constructor(private readonly inputService: InputService) {}
@@ -12,7 +13,7 @@ export class InputController {
       const input = await this.inputService.create(data);
 
       res.status(StatusCodes.CREATED).json({
-        data: input,
+        data: instanceToPlain(input),
         message: 'Insumo creado exitosamente',
       });
     } catch (error) {
@@ -25,7 +26,7 @@ export class InputController {
       const inputs = await this.inputService.findAll();
 
       res.status(StatusCodes.OK).json({
-        data: inputs,
+        data: instanceToPlain(inputs),
         count: inputs.length,
         message: 'Insumos obtenidos exitosamente',
       });

@@ -6,6 +6,14 @@ import { CreatePlotDto, UpdatePlotDto } from '@dtos/plot.dto';
 import { PlotFilters } from '@/interfaces/filters.interface';
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
+import { UserRole } from '@/enums';
+
+interface GetAllPlotsOptions {
+  includeFullDetails?: boolean;
+  filters?: PlotFilters;
+  userId?: string;
+  userRole?: UserRole;
+}
 
 export class PlotService {
   private plotRepository: Repository<Plot>;
@@ -66,58 +74,90 @@ export class PlotService {
   }
 
   /**
-   * Obtener todas las parcelas con filtros opcionales
-   * @param filters Filtros opcionales para la búsqueda
-   * @returns Promise<Plot[]>
+   * Obtener todas las parcelas con proyección adaptativa según contexto
+   * @param options Opciones de búsqueda y proyección
+   * @returns Promise<{ data: Plot[] | Partial<Plot>[]; count: number }>
+   * 
+   * Comportamiento:
+   * - Sin filtros + sin includeFullDetails → Solo datos de mapa (id, name, location)
+   * - Con filtros o ADMIN o includeFullDetails → Datos completos (area, variety, field)
    * 
    * Ejemplos de uso:
-   * - getAllPlots() → Todas las parcelas
-   * - getAllPlots({ fieldId: '123' }) → Parcelas de un campo específico
-   * - getAllPlots({ varietyId: '456' }) → Parcelas de una variedad específica
-   * - getAllPlots({ minArea: 50, maxArea: 200 }) → Parcelas por rango de área
+   * - getAllPlots() → Todas las parcelas (solo mapa)
+   * - getAllPlots({ includeFullDetails: true }) → Todas las parcelas (datos completos)
+   * - getAllPlots({ filters: { fieldId: '123' } }) → Parcelas de campo (datos completos)
+   * - getAllPlots({ filters: { managedFieldIds: [...] }, userRole: UserRole.CAPATAZ }) → Parcelas del CAPATAZ (datos completos)
    */
-  async getAllPlots(filters?: PlotFilters): Promise<Plot[]> {
+  async getAllPlots(options: GetAllPlotsOptions = {}): Promise<{ data: (Plot | Partial<Plot>)[]; count: number }> {
+    const { includeFullDetails = false, filters = {}, userId, userRole } = options;
+
     const queryBuilder = this.plotRepository
-      .createQueryBuilder('plot')
-      .leftJoinAndSelect('plot.field', 'field')
-      .leftJoinAndSelect('plot.variety', 'variety');
+      .createQueryBuilder('plot');
 
-    if (filters) {
-      if (filters.fieldId) {
-        queryBuilder.andWhere('plot.fieldId = :fieldId', {
-          fieldId: filters.fieldId
-        });
-      }
+    // Determinar si debe incluir detalles completos
+    const hasFilters = 
+      filters.fieldId !== undefined ||
+      filters.varietyId !== undefined ||
+      filters.managedFieldIds !== undefined ||
+      filters.minArea !== undefined ||
+      filters.maxArea !== undefined;
 
-      if (filters.varietyId) {
-        queryBuilder.andWhere('plot.varietyId = :varietyId', {
-          varietyId: filters.varietyId
-        });
-      }
+    const shouldIncludeDetails = 
+      includeFullDetails || 
+      userRole === UserRole.ADMIN ||
+      hasFilters;
 
-      if (filters.minArea) {
-        queryBuilder.andWhere('plot.area >= :minArea', {
-          minArea: filters.minArea
-        });
-      }
+    if (shouldIncludeDetails) {
+      // Datos completos: incluir relaciones y todos los campos
+      queryBuilder
+        .leftJoinAndSelect('plot.field', 'field')
+        .leftJoinAndSelect('plot.variety', 'variety');
+    } else {
+      // Solo datos de mapa: proyección limitada
+      queryBuilder.select([
+        'plot.id',
+        'plot.name',
+        'plot.location',
+      ]);
+    }
 
-      if (filters.maxArea) {
-        queryBuilder.andWhere('plot.area <= :maxArea', {
-          maxArea: filters.maxArea
-        });
-      }
+    // Aplicar filtros
+    if (filters.fieldId) {
+      queryBuilder.andWhere('plot.fieldId = :fieldId', {
+        fieldId: filters.fieldId
+      });
+    }
 
-      // Filtro especial para CAPATAZ: Solo parcelas de campos gestionados
-      if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
-        queryBuilder.andWhere('plot.fieldId IN (:...managedFieldIds)', {
-          managedFieldIds: filters.managedFieldIds
-        });
-      }
+    if (filters.varietyId) {
+      queryBuilder.andWhere('plot.varietyId = :varietyId', {
+        varietyId: filters.varietyId
+      });
+    }
+
+    if (filters.minArea) {
+      queryBuilder.andWhere('plot.area >= :minArea', {
+        minArea: filters.minArea
+      });
+    }
+
+    if (filters.maxArea) {
+      queryBuilder.andWhere('plot.area <= :maxArea', {
+        maxArea: filters.maxArea
+      });
+    }
+
+    // Filtro especial para CAPATAZ: Solo parcelas de campos gestionados
+    if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
+      queryBuilder.andWhere('plot.fieldId IN (:...managedFieldIds)', {
+        managedFieldIds: filters.managedFieldIds
+      });
     }
 
     queryBuilder.orderBy('plot.createdAt', 'DESC');
 
-    return await queryBuilder.getMany();
+    const [data, count] = await queryBuilder.getManyAndCount();
+
+    return { data, count };
   }
 
   /**

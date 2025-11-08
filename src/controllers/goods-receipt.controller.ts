@@ -5,6 +5,7 @@ import { CreateGoodsReceiptDto } from '@dtos/goods-receipt.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { isValidUUID } from '@/utils/validation.utils';
 import { DataSource } from 'typeorm';
+import { instanceToPlain } from 'class-transformer';
 
 export class GoodsReceiptController {
   private goodsReceiptService: GoodsReceiptService;
@@ -29,7 +30,7 @@ export class GoodsReceiptController {
       const goodsReceipt = await this.goodsReceiptService.create(data, userId);
 
       res.status(StatusCodes.CREATED).json({
-        data: goodsReceipt,
+        data: instanceToPlain(goodsReceipt),
         message: 'Recepción registrada exitosamente',
       });
     } catch (error) {
@@ -46,7 +47,7 @@ export class GoodsReceiptController {
       const receipts = await this.goodsReceiptService.findAll();
 
       res.status(StatusCodes.OK).json({
-        data: receipts,
+        data: instanceToPlain(receipts),
         count: receipts.length,
         message: 'Recepciones obtenidas exitosamente',
       });
@@ -74,7 +75,7 @@ export class GoodsReceiptController {
       const receipt = await this.goodsReceiptService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: receipt,
+        data: instanceToPlain(receipt),
         message: 'Recepción obtenida exitosamente',
       });
     } catch (error) {

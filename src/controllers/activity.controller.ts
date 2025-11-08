@@ -6,6 +6,7 @@ import { StatusCodes } from "http-status-codes";
 import { CreateActivityDto, UpdateActivityDto } from "@/dtos/activity.dto";
 import { ActivityFilters } from "@/interfaces/filters.interface";
 import { ActivityType, ActivityStatus, UserRole } from "@/enums";
+import { instanceToPlain } from "class-transformer";
 
 export class ActivityController {
   private activityService: ActivityService;
@@ -50,11 +51,9 @@ export class ActivityController {
       if (req.managedFieldIds && req.managedFieldIds.length > 0) {
         filters.managedFieldIds = req.managedFieldIds;
         
-        // Si NO hay filtro de assignedToId en query, incluir al CAPATAZ también
-        // Si HAY filtro de assignedToId, respetarlo (para que el CAPATAZ pueda supervisar a otros)
-        if (!req.query.assignedToId && req.user?.userId) {
-          filters.assignedToId = req.user.userId;
-        }
+        // NO agregar assignedToId automáticamente para CAPATAZ con campos
+        // El OR en el servicio ya maneja mostrar OTs en sus campos gestionados
+        // Si el usuario filtra explícitamente por assignedToId, respetar ese filtro (ya está en filters.assignedToId de arriba)
       }
 
       const activities = await this.activityService.findAll(
@@ -62,7 +61,7 @@ export class ActivityController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: activities,
+        data: instanceToPlain(activities),
         count: activities.length,
         message: 'Actividades obtenidas exitosamente.',
       });
@@ -86,7 +85,7 @@ export class ActivityController {
       const activity = await this.activityService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: activity,
+        data: instanceToPlain(activity),
         message: 'Actividad obtenida exitosamente.',
       });
     } catch (error) {
@@ -119,7 +118,7 @@ export class ActivityController {
       const newActivity = await this.activityService.create(activityData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newActivity,
+        data: instanceToPlain(newActivity),
         message: 'Actividad creada exitosamente.',
       });
     } catch (error) {
@@ -137,8 +136,7 @@ export class ActivityController {
    * 3. OPERARIO modifica → Status: PENDING (requiere nueva aprobación)
    * 
    * REGLAS:
-   * - OPERARIO no puede modificar actividades PENDING (debe esperar aprobación)
-   * - OPERARIO puede modificar actividades APPROVED/REJECTED (vuelven a PENDING)
+   * - OPERARIO puede modificar actividades PENDING o APPROVED/REJECTED (vuelven a PENDING)
    * - OPERARIO no puede cambiar el status manualmente
    * - CAPATAZ/ADMIN pueden modificar cualquier actividad y cambiar su status
    */
@@ -151,9 +149,6 @@ export class ActivityController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la actividad es requerido.');
       }
 
-      // Obtener la actividad actual para validar su estado
-      const currentActivity = await this.activityService.findById(id);
-
       // OPERARIO: validaciones especiales
       if (req.user?.role === UserRole.OPERARIO) {
         // 1. No puede cambiar el status (solo CAPATAZ/ADMIN pueden aprobar/rechazar)
@@ -164,15 +159,7 @@ export class ActivityController {
           );
         }
 
-        // 2. No puede modificar una actividad que está PENDING
-        if (currentActivity.status === ActivityStatus.PENDING) {
-          throw new HttpException(
-            StatusCodes.FORBIDDEN,
-            'No puedes modificar una actividad que está pendiente de aprobación. Espera a que un capataz o administrador la apruebe.'
-          );
-        }
-
-        // 3. Si la actividad está APPROVED o REJECTED, al modificarla vuelve a PENDING
+        // 2. Si la actividad está APPROVED o REJECTED, al modificarla vuelve a PENDING
         // (para que un capataz revise los cambios)
         activityData.status = ActivityStatus.PENDING;
       }
@@ -180,7 +167,7 @@ export class ActivityController {
       const updatedActivity = await this.activityService.update(id, activityData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedActivity,
+        data: instanceToPlain(updatedActivity),
         message: 'Actividad actualizada exitosamente.',
       });
     } catch (error) {
@@ -203,7 +190,7 @@ export class ActivityController {
       const deletedActivity = await this.activityService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedActivity,
+        data: instanceToPlain(deletedActivity),
         message: 'Actividad eliminada exitosamente.',
         canRestore: true,
       });
@@ -227,7 +214,7 @@ export class ActivityController {
       const restoredActivity = await this.activityService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredActivity,
+        data: instanceToPlain(restoredActivity),
         message: 'Actividad restaurada exitosamente.',
       });
     } catch (error) {
@@ -250,7 +237,7 @@ export class ActivityController {
       const deletedActivity = await this.activityService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedActivity,
+        data: instanceToPlain(deletedActivity),
         message: 'Actividad eliminada permanentemente.',
         canRestore: false,
       });

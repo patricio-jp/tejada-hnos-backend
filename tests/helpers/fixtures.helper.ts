@@ -5,7 +5,9 @@ import { WorkOrder } from '@/entities/work-order.entity';
 import { Activity } from '@/entities/activity.entity';
 import { Variety } from '@/entities/variety.entity';
 import { User } from '@/entities/user.entity';
-import { WorkOrderStatus, ActivityType, ActivityStatus } from '@/enums';
+import { Input } from '@/entities/input.entity';
+import { InputUsage } from '@/entities/input-usage.entity';
+import { WorkOrderStatus, ActivityType, ActivityStatus, InputUnit } from '@/enums';
 import { GeoJSONPolygon } from '@/types';
 
 /**
@@ -145,6 +147,52 @@ export const createTestActivity = async (
   });
 
   return await activityRepository.save(activity);
+};
+
+/**
+ * Creates a test input
+ */
+export const createTestInput = async (
+  dataSource: DataSource,
+  data: {
+    name: string;
+    unit: InputUnit;
+    stock?: number;
+    costPerUnit?: number;
+  }
+): Promise<Input> => {
+  const inputRepository = dataSource.getRepository(Input);
+  
+  const input = inputRepository.create({
+    name: data.name,
+    unit: data.unit,
+    stock: data.stock || 0,
+    costPerUnit: data.costPerUnit || 0,
+  });
+
+  return await inputRepository.save(input);
+};
+
+/**
+ * Creates a test input usage
+ */
+export const createTestInputUsage = async (
+  dataSource: DataSource,
+  data: {
+    activityId: string;
+    inputId: string;
+    quantityUsed: number;
+  }
+): Promise<InputUsage> => {
+  const inputUsageRepository = dataSource.getRepository(InputUsage);
+  
+  const inputUsage = inputUsageRepository.create({
+    activityId: data.activityId,
+    inputId: data.inputId,
+    quantityUsed: data.quantityUsed,
+  });
+
+  return await inputUsageRepository.save(inputUsage);
 };
 
 /**

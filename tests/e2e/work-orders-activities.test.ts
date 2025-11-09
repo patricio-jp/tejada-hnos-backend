@@ -855,7 +855,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(savedActivity!.status).toBe(ActivityStatus.PENDING);
     });
 
-    it('should allow OPERARIO to create activity with inputs used', async () => {
+    it('should allow OPERARIO to create activity with inputs used (PENDING, stock NOT deducted)', async () => {
       // Arrange
       const scenario = await setupWorkOrderScenario(dataSource, {
         capatazId: capataz.id,
@@ -906,6 +906,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(response.status).toBe(201);
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data.type).toBe(ActivityType.APLICACION);
+      expect(response.body.data.status).toBe(ActivityStatus.PENDING); // PENDING by default for OPERARIO
       expect(response.body.data.inputsUsed).toBeDefined();
       expect(response.body.data.inputsUsed).toHaveLength(2);
 
@@ -927,6 +928,14 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(pesticideUsage).toBeTruthy();
       expect(pesticideUsage!.quantityUsed).toBe(3.25);
       expect(pesticideUsage!.input.name).toBe('Pesticida Orgánico');
+
+      // IMPORTANT: Verify stock was NOT deducted (activity is PENDING)
+      const inputRepository = dataSource.getRepository(Input);
+      const updatedFertilizante = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      const updatedPesticida = await inputRepository.findOne({ where: { id: pesticida.id } });
+
+      expect(updatedFertilizante!.stock).toBe(100); // Stock unchanged
+      expect(updatedPesticida!.stock).toBe(50); // Stock unchanged
     });
 
     it('should allow CAPATAZ to create activity with inputs for work order in managed field', async () => {
@@ -966,6 +975,132 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(response.body.data.inputsUsed).toHaveLength(1);
       expect(response.body.data.inputsUsed[0].input.name).toBe('Herbicida Selectivo');
       expect(response.body.data.inputsUsed[0].quantityUsed).toBe(5.0);
+      // CAPATAZ creates as APPROVED by default, so stock should be deducted
+      expect(response.body.data.status).toBe(ActivityStatus.APPROVED);
+
+      // Verify stock was deducted
+      const inputRepository = dataSource.getRepository(Input);
+      const updatedHerbicida = await inputRepository.findOne({ where: { id: herbicida.id } });
+      expect(updatedHerbicida!.stock).toBe(25.0); // 30 - 5 = 25
+    });
+
+    it('should deduct stock when CAPATAZ approves activity with inputs', async () => {
+      // Arrange
+      const scenario = await setupWorkOrderScenario(dataSource, {
+        capatazId: capataz.id,
+        operarioId: operario.id,
+      });
+
+      const fertilizante = await createTestInput(dataSource, {
+        name: 'Fertilizante Test Approval',
+        unit: InputUnit.KG,
+        stock: 200,
+        costPerUnit: 15.0,
+      });
+
+      // Create activity as OPERARIO (PENDING)
+      const activityData = {
+        type: ActivityType.APLICACION,
+        executionDate: new Date('2025-06-05').toISOString(),
+        hoursWorked: 5,
+        inputsUsed: [
+          {
+            inputId: fertilizante.id,
+            quantityUsed: 50.0,
+          },
+        ],
+      };
+
+      const createResponse = await request(app)
+        .post(`/work-orders/${scenario.assignedWorkOrder.id}/activities`)
+        .set('Authorization', `Bearer ${operario.token}`)
+        .send(activityData);
+
+      expect(createResponse.status).toBe(201);
+      const activityId = createResponse.body.data.id;
+      expect(createResponse.body.data.status).toBe(ActivityStatus.PENDING);
+
+      // Verify stock NOT deducted yet
+      const inputRepository = dataSource.getRepository(Input);
+      let currentInput = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      expect(currentInput!.stock).toBe(200); // Still 200
+
+      // Act: CAPATAZ approves
+      const approveResponse = await request(app)
+        .put(`/activities/${activityId}`)
+        .set('Authorization', `Bearer ${capataz.token}`)
+        .send({
+          status: ActivityStatus.APPROVED,
+        });
+
+      // Assert
+      expect(approveResponse.status).toBe(200);
+      expect(approveResponse.body.data.status).toBe(ActivityStatus.APPROVED);
+
+      // Verify stock WAS deducted after approval
+      currentInput = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      expect(currentInput!.stock).toBe(150); // 200 - 50 = 150
+    });
+
+    it('should return error when approving activity with insufficient stock', async () => {
+      // Arrange
+      const scenario = await setupWorkOrderScenario(dataSource, {
+        capatazId: capataz.id,
+        operarioId: operario.id,
+      });
+
+      const pesticida = await createTestInput(dataSource, {
+        name: 'Pesticida Low Stock',
+        unit: InputUnit.LITRO,
+        stock: 20, // Only 20 liters available
+        costPerUnit: 30.0,
+      });
+
+      // Create activity requesting 50 liters (more than available)
+      const activityData = {
+        type: ActivityType.APLICACION,
+        executionDate: new Date('2025-06-05').toISOString(),
+        hoursWorked: 4,
+        inputsUsed: [
+          {
+            inputId: pesticida.id,
+            quantityUsed: 50.0, // Requesting 50 but only 20 available
+          },
+        ],
+      };
+
+      const createResponse = await request(app)
+        .post(`/work-orders/${scenario.assignedWorkOrder.id}/activities`)
+        .set('Authorization', `Bearer ${operario.token}`)
+        .send(activityData);
+
+      expect(createResponse.status).toBe(201);
+      const activityId = createResponse.body.data.id;
+
+      // Act: Try to approve (should fail due to insufficient stock)
+      const approveResponse = await request(app)
+        .put(`/activities/${activityId}`)
+        .set('Authorization', `Bearer ${capataz.token}`)
+        .send({
+          status: ActivityStatus.APPROVED,
+        });
+
+      // Assert
+      expect(approveResponse.status).toBe(400);
+      expect(approveResponse.body.errors[0].message).toContain('Stock insuficiente');
+      expect(approveResponse.body.errors[0].message).toContain('Pesticida Low Stock');
+      expect(approveResponse.body.errors[0].message).toContain('Disponible: 20');
+      expect(approveResponse.body.errors[0].message).toContain('Requerido: 50');
+
+      // Verify activity is still PENDING
+      const activityRepository = dataSource.getRepository(Activity);
+      const activity = await activityRepository.findOne({ where: { id: activityId } });
+      expect(activity!.status).toBe(ActivityStatus.PENDING);
+
+      // Verify stock unchanged
+      const inputRepository = dataSource.getRepository(Input);
+      const currentInput = await inputRepository.findOne({ where: { id: pesticida.id } });
+      expect(currentInput!.stock).toBe(20); // Still 20, no changes
     });
 
     it('should deny OPERARIO from creating activity for unassigned work order', async () => {
@@ -1523,13 +1658,13 @@ describe('E2E: Work Orders and Activities Flow', () => {
         status: WorkOrderStatus.IN_PROGRESS,
       });
 
-      // Create activities for each operario (already approved so they can be modified)
+      // Create activities for each operario (PENDING so they can be modified)
       const activity1 = await createTestActivity(dataSource, {
         workOrderId: wo1.id,
         type: ActivityType.PODA,
         executionDate: new Date('2025-07-02'),
         hoursWorked: 5,
-        status: ActivityStatus.APPROVED, // APPROVED so operario can update it
+        status: ActivityStatus.PENDING, // PENDING so operario can update it
       });
 
       const activity2 = await createTestActivity(dataSource, {
@@ -1537,7 +1672,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
         type: ActivityType.RIEGO,
         executionDate: new Date('2025-07-02'),
         hoursWorked: 4,
-        status: ActivityStatus.APPROVED, // APPROVED so operario can update it
+        status: ActivityStatus.PENDING, // PENDING so operario can update it
       });
 
       // Act & Assert: Operario 1 can update their own activity
@@ -1573,7 +1708,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(responseCross2.status).toBe(403);
     });
 
-    it('should allow OPERARIO to add inputs when updating their activity', async () => {
+    it('should allow OPERARIO to add inputs when updating PENDING activity', async () => {
       // Arrange
       const scenario = await setupWorkOrderScenario(dataSource, {
         capatazId: capataz.id,
@@ -1593,7 +1728,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
         hoursWorked: 4,
       };
 
-      // Create activity without inputs
+      // Create activity without inputs (PENDING)
       const createResponse = await request(app)
         .post(`/work-orders/${scenario.assignedWorkOrder.id}/activities`)
         .set('Authorization', `Bearer ${operario.token}`)
@@ -1601,8 +1736,9 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       expect(createResponse.status).toBe(201);
       const activityId = createResponse.body.data.id;
+      expect(createResponse.body.data.status).toBe(ActivityStatus.PENDING);
 
-      // Act: Update activity to add inputs
+      // Act: Update activity to add inputs (still PENDING)
       const updateResponse = await request(app)
         .put(`/activities/${activityId}`)
         .set('Authorization', `Bearer ${operario.token}`)
@@ -1618,6 +1754,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       // Assert
       expect(updateResponse.status).toBe(200);
+      expect(updateResponse.body.data.status).toBe(ActivityStatus.PENDING);
       expect(updateResponse.body.data.hoursWorked).toBe(5);
       expect(updateResponse.body.data.inputsUsed).toBeDefined();
       expect(updateResponse.body.data.inputsUsed).toHaveLength(1);
@@ -1630,10 +1767,81 @@ describe('E2E: Work Orders and Activities Flow', () => {
         relations: ['input'],
       });
       expect(usages).toHaveLength(1);
-      expect(usages[0].input.name).toBe('Fertilizante Orgánico');
+      expect(usages[0]).toBeTruthy();
+      expect(usages[0]!.input).toBeTruthy();
+      expect(usages[0]!.input.name).toBe('Fertilizante Orgánico');
+
+      // Verify stock NOT deducted (still PENDING)
+      const inputRepository = dataSource.getRepository(Input);
+      const currentInput = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      expect(currentInput!.stock).toBe(200); // Unchanged
     });
 
-    it('should allow OPERARIO to modify inputs when updating their activity', async () => {
+    it('should block OPERARIO from modifying inputs in APPROVED activity', async () => {
+      // Arrange
+      const scenario = await setupWorkOrderScenario(dataSource, {
+        capatazId: capataz.id,
+        operarioId: operario.id,
+      });
+
+      const fertilizante = await createTestInput(dataSource, {
+        name: 'Fertilizante Approved Test',
+        unit: InputUnit.KG,
+        stock: 200,
+        costPerUnit: 12.5,
+      });
+
+      // Create and approve activity
+      const activityData = {
+        type: ActivityType.APLICACION,
+        executionDate: new Date('2025-06-05').toISOString(),
+        hoursWorked: 4,
+        inputsUsed: [
+          {
+            inputId: fertilizante.id,
+            quantityUsed: 20.0,
+          },
+        ],
+      };
+
+      const createResponse = await request(app)
+        .post(`/work-orders/${scenario.assignedWorkOrder.id}/activities`)
+        .set('Authorization', `Bearer ${operario.token}`)
+        .send(activityData);
+
+      const activityId = createResponse.body.data.id;
+
+      // Approve it
+      await request(app)
+        .put(`/activities/${activityId}`)
+        .set('Authorization', `Bearer ${capataz.token}`)
+        .send({ status: ActivityStatus.APPROVED });
+
+      // Act: Try to modify inputs (should fail)
+      const updateResponse = await request(app)
+        .put(`/activities/${activityId}`)
+        .set('Authorization', `Bearer ${operario.token}`)
+        .send({
+          inputsUsed: [
+            {
+              inputId: fertilizante.id,
+              quantityUsed: 50.0, // Try to change quantity
+            },
+          ],
+        });
+
+      // Assert
+      expect(updateResponse.status).toBe(403);
+      expect(updateResponse.body.errors[0].message).toContain('No puedes modificar una actividad aprobada');
+      expect(updateResponse.body.errors[0].message).toContain('nueva actividad');
+
+      // Verify stock remains at 180 (200 - 20 from approval)
+      const inputRepository = dataSource.getRepository(Input);
+      const currentInput = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      expect(currentInput!.stock).toBe(180);
+    });
+
+    it('should allow OPERARIO to modify inputs in PENDING activity', async () => {
       // Arrange
       const scenario = await setupWorkOrderScenario(dataSource, {
         capatazId: capataz.id,
@@ -1654,7 +1862,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
         costPerUnit: 18.0,
       });
 
-      // Create activity with one input
+      // Create activity with one input (PENDING)
       const activityData = {
         type: ActivityType.APLICACION,
         executionDate: new Date('2025-06-05').toISOString(),
@@ -1674,6 +1882,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       expect(createResponse.status).toBe(201);
       const activityId = createResponse.body.data.id;
+      expect(createResponse.body.data.status).toBe(ActivityStatus.PENDING);
 
       // Act: Update activity to modify inputs (replace with different ones)
       const updateResponse = await request(app)
@@ -1694,6 +1903,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       // Assert
       expect(updateResponse.status).toBe(200);
+      expect(updateResponse.body.data.status).toBe(ActivityStatus.PENDING);
       expect(updateResponse.body.data.inputsUsed).toHaveLength(2);
 
       // Verify in database
@@ -1713,9 +1923,16 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       expect(pesticidaUsage).toBeTruthy();
       expect(pesticidaUsage!.quantityUsed).toBe(5.0);
+
+      // Verify stock NOT deducted (still PENDING)
+      const inputRepository = dataSource.getRepository(Input);
+      const currentPesticida = await inputRepository.findOne({ where: { id: pesticida.id } });
+      const currentHerbicida = await inputRepository.findOne({ where: { id: herbicida.id } });
+      expect(currentPesticida!.stock).toBe(50); // Unchanged
+      expect(currentHerbicida!.stock).toBe(60); // Unchanged
     });
 
-    it('should allow CAPATAZ to approve activity and verify inputs are preserved', async () => {
+    it('should allow CAPATAZ to approve activity and verify inputs are preserved with stock deducted', async () => {
       // Arrange
       const scenario = await setupWorkOrderScenario(dataSource, {
         capatazId: capataz.id,
@@ -1729,7 +1946,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
         costPerUnit: 18.0,
       });
 
-      // Create activity with inputs
+      // Create activity with inputs (PENDING)
       const activityData = {
         type: ActivityType.APLICACION,
         executionDate: new Date('2025-06-05').toISOString(),
@@ -1749,6 +1966,12 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       expect(createResponse.status).toBe(201);
       const activityId = createResponse.body.data.id;
+      expect(createResponse.body.data.status).toBe(ActivityStatus.PENDING);
+
+      // Verify stock before approval
+      const inputRepository = dataSource.getRepository(Input);
+      let currentInput = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      expect(currentInput!.stock).toBe(150); // Stock not deducted yet
 
       // Act: Capataz approves the activity
       const approveResponse = await request(app)
@@ -1771,7 +1994,12 @@ describe('E2E: Work Orders and Activities Flow', () => {
         relations: ['input'],
       });
       expect(usages).toHaveLength(1);
-      expect(usages[0].quantityUsed).toBe(20.0);
+      expect(usages[0]).toBeTruthy();
+      expect(usages[0]!.quantityUsed).toBe(20.0);
+
+      // Verify stock WAS deducted after approval
+      currentInput = await inputRepository.findOne({ where: { id: fertilizante.id } });
+      expect(currentInput!.stock).toBe(130); // 150 - 20 = 130
     });
 
     it('should retrieve activity with inputs when getting activity list', async () => {
@@ -2080,11 +2308,14 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(rejectResponse.status).toBe(200);
       expect(rejectResponse.body.data.status).toBe(ActivityStatus.REJECTED);
 
-      // Step 4: OPERARIO updates activity with corrected inputs
-      const updateActivityResponse = await request(app)
-        .put(`/activities/${activityId}`)
+      // Step 4: OPERARIO creates a NEW activity with corrected inputs
+      // (Cannot modify REJECTED activity, must create new one)
+      const newActivityResponse = await request(app)
+        .post(`/work-orders/${workOrderId}/activities`)
         .set('Authorization', `Bearer ${operario.token}`)
         .send({
+          type: ActivityType.APLICACION,
+          executionDate: new Date('2025-08-03').toISOString(),
           hoursWorked: 8,
           details: {
             notes: 'Corrected amounts and added herbicide',
@@ -2106,14 +2337,15 @@ describe('E2E: Work Orders and Activities Flow', () => {
           ],
         });
 
-      expect(updateActivityResponse.status).toBe(200);
-      expect(updateActivityResponse.body.data.hoursWorked).toBe(8);
-      expect(updateActivityResponse.body.data.inputsUsed).toHaveLength(3);
-      expect(updateActivityResponse.body.data.status).toBe(ActivityStatus.PENDING);
+      expect(newActivityResponse.status).toBe(201);
+      const newActivityId = newActivityResponse.body.data.id;
+      expect(newActivityResponse.body.data.hoursWorked).toBe(8);
+      expect(newActivityResponse.body.data.inputsUsed).toHaveLength(3);
+      expect(newActivityResponse.body.data.status).toBe(ActivityStatus.PENDING);
 
-      // Step 5: CAPATAZ approves the corrected activity
+      // Step 5: CAPATAZ approves the new corrected activity
       const approveActivityResponse = await request(app)
-        .put(`/activities/${activityId}`)
+        .put(`/activities/${newActivityId}`)
         .set('Authorization', `Bearer ${capataz.token}`)
         .send({
           status: ActivityStatus.APPROVED,
@@ -2123,19 +2355,28 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(approveActivityResponse.body.data.status).toBe(ActivityStatus.APPROVED);
       expect(approveActivityResponse.body.data.inputsUsed).toHaveLength(3);
 
-      // Step 6: ADMIN views activity to verify inputs
+      // Step 6: ADMIN views activities to verify both exist (rejected and approved)
       const getActivityResponse = await request(app)
         .get('/activities')
         .set('Authorization', `Bearer ${admin.token}`);
 
       expect(getActivityResponse.status).toBe(200);
-      const activity = getActivityResponse.body.data.find((a: any) => a.id === activityId);
-      expect(activity).toBeTruthy();
-      expect(activity.inputsUsed).toHaveLength(3);
+      
+      // Original rejected activity should still exist
+      const rejectedActivity = getActivityResponse.body.data.find((a: any) => a.id === activityId);
+      expect(rejectedActivity).toBeTruthy();
+      expect(rejectedActivity.status).toBe(ActivityStatus.REJECTED);
+      expect(rejectedActivity.inputsUsed).toHaveLength(2);
+      
+      // New approved activity should exist with corrected inputs
+      const approvedActivity = getActivityResponse.body.data.find((a: any) => a.id === newActivityId);
+      expect(approvedActivity).toBeTruthy();
+      expect(approvedActivity.status).toBe(ActivityStatus.APPROVED);
+      expect(approvedActivity.inputsUsed).toHaveLength(3);
 
-      const fertUsage = activity.inputsUsed.find((u: any) => u.inputId === fertilizante.id);
-      const pestUsage = activity.inputsUsed.find((u: any) => u.inputId === pesticida.id);
-      const herbUsage = activity.inputsUsed.find((u: any) => u.inputId === herbicida.id);
+      const fertUsage = approvedActivity.inputsUsed.find((u: any) => u.inputId === fertilizante.id);
+      const pestUsage = approvedActivity.inputsUsed.find((u: any) => u.inputId === pesticida.id);
+      const herbUsage = approvedActivity.inputsUsed.find((u: any) => u.inputId === herbicida.id);
 
       expect(fertUsage.quantityUsed).toBe(45.0);
       expect(pestUsage.quantityUsed).toBe(12.0);
@@ -2153,10 +2394,10 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(completeWOResponse.status).toBe(200);
       expect(completeWOResponse.body.data.status).toBe(WorkOrderStatus.COMPLETED);
 
-      // Verify final state in database
+      // Verify final state in database - check the NEW approved activity
       const activityRepository = dataSource.getRepository(Activity);
       const finalActivity = await activityRepository.findOne({
-        where: { id: activityId },
+        where: { id: newActivityId },
         relations: ['inputsUsed', 'inputsUsed.input'],
       });
 
@@ -2167,7 +2408,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       const inputUsageRepository = dataSource.getRepository(InputUsage);
       const allUsages = await inputUsageRepository.find({
-        where: { activityId },
+        where: { activityId: newActivityId },
         relations: ['input'],
       });
 
@@ -2211,23 +2452,38 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(rejectResponse.status).toBe(200);
       expect(rejectResponse.body.data.status).toBe(ActivityStatus.REJECTED);
 
-      // Step 3: OPERARIO updates the rejected activity
-      const updateResponse = await request(app)
+      // Step 3: OPERARIO cannot update rejected activity, must create a new one
+      const tryUpdateResponse = await request(app)
         .put(`/activities/${activityId}`)
         .set('Authorization', `Bearer ${operario.token}`)
         .send({
+          hoursWorked: 5,
+        });
+
+      expect(tryUpdateResponse.status).toBe(403);
+      expect(tryUpdateResponse.body.errors[0].message).toContain('rechazada');
+      expect(tryUpdateResponse.body.errors[0].message).toContain('nueva actividad');
+
+      // Step 4: OPERARIO creates a NEW activity with corrections
+      const newActivityResponse = await request(app)
+        .post(`/work-orders/${scenario.assignedWorkOrder.id}/activities`)
+        .set('Authorization', `Bearer ${operario.token}`)
+        .send({
+          type: ActivityType.RIEGO,
+          executionDate: new Date('2025-06-10').toISOString(),
           hoursWorked: 5, // Corrected hours
           details: {
             notes: 'Corrected hours after feedback',
           },
         });
 
-      expect(updateResponse.status).toBe(200);
-      expect(updateResponse.body.data.hoursWorked).toBe(5);
+      expect(newActivityResponse.status).toBe(201);
+      const newActivityId = newActivityResponse.body.data.id;
+      expect(newActivityResponse.body.data.hoursWorked).toBe(5);
 
-      // Step 4: CAPATAZ approves the updated activity
+      // Step 5: CAPATAZ approves the new activity
       const approveResponse = await request(app)
-        .put(`/activities/${activityId}`)
+        .put(`/activities/${newActivityId}`)
         .set('Authorization', `Bearer ${capataz.token}`)
         .send({
           status: ActivityStatus.APPROVED,
@@ -2236,14 +2492,24 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(approveResponse.status).toBe(200);
       expect(approveResponse.body.data.status).toBe(ActivityStatus.APPROVED);
 
-      // Verify final state
+      // Verify final state - both activities exist
       const activityRepository = dataSource.getRepository(Activity);
-      const finalActivity = await activityRepository.findOne({
+      
+      // Original rejected activity
+      const rejectedActivity = await activityRepository.findOne({
         where: { id: activityId },
       });
-      expect(finalActivity).toBeTruthy();
-      expect(finalActivity!.status).toBe(ActivityStatus.APPROVED);
-      expect(finalActivity!.hoursWorked).toBe(5);
+      expect(rejectedActivity).toBeTruthy();
+      expect(rejectedActivity!.status).toBe(ActivityStatus.REJECTED);
+      expect(rejectedActivity!.hoursWorked).toBe(3);
+
+      // New approved activity
+      const approvedActivity = await activityRepository.findOne({
+        where: { id: newActivityId },
+      });
+      expect(approvedActivity).toBeTruthy();
+      expect(approvedActivity!.status).toBe(ActivityStatus.APPROVED);
+      expect(approvedActivity!.hoursWorked).toBe(5);
     });
   });
 });

@@ -130,15 +130,18 @@ export class ActivityController {
    * PUT /activities/:id
    * Actualizar una actividad por su ID
    * 
-   * FLUJO DE ESTADOS PARA OPERARIO:
-   * 1. Crea actividad → Status: PENDING (automático)
-   * 2. CAPATAZ aprueba → Status: APPROVED
-   * 3. OPERARIO modifica → Status: PENDING (requiere nueva aprobación)
+   * FLUJO DE ESTADOS Y CONTROL DE STOCK:
+   * 1. Operario crea actividad → Status: PENDING (stock NO descontado)
+   * 2. Operario puede modificar inputs mientras esté PENDING
+   * 3. Capataz APRUEBA → Status: APPROVED (stock descontado en este momento)
+   * 4. Si está APPROVED/REJECTED → NO se pueden modificar inputs
    * 
    * REGLAS:
-   * - OPERARIO puede modificar actividades PENDING o APPROVED/REJECTED (vuelven a PENDING)
+   * - OPERARIO puede modificar actividades PENDING (inputs y otros campos)
+   * - OPERARIO puede modificar actividades APPROVED/REJECTED (solo campos, NO inputs, vuelve a PENDING)
    * - OPERARIO no puede cambiar el status manualmente
    * - CAPATAZ/ADMIN pueden modificar cualquier actividad y cambiar su status
+   * - Modificar inputs en actividades APPROVED/REJECTED está BLOQUEADO (por el service)
    */
   public update = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -149,19 +152,27 @@ export class ActivityController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la actividad es requerido.');
       }
 
-      // OPERARIO: validaciones especiales
-      if (req.user?.role === UserRole.OPERARIO) {
-        // 1. No puede cambiar el status (solo CAPATAZ/ADMIN pueden aprobar/rechazar)
-        if (activityData.status !== undefined) {
-          throw new HttpException(
-            StatusCodes.FORBIDDEN,
-            'Un operario no puede cambiar el estado de una actividad. Solo un capataz o administrador puede aprobar o rechazar actividades.'
-          );
-        }
+      // Obtener la actividad para verificar su estado actual
+      const currentActivity = await this.activityService.findById(id);
 
-        // 2. Si la actividad está APPROVED o REJECTED, al modificarla vuelve a PENDING
-        // (para que un capataz revise los cambios)
-        activityData.status = ActivityStatus.PENDING;
+      // REGLA UNIVERSAL: Las actividades APPROVED o REJECTED son INMUTABLES
+      // Nadie (ni OPERARIO, ni CAPATAZ, ni ADMIN) puede modificarlas
+      // Para hacer cambios, se debe crear una nueva actividad
+      if (currentActivity.status === ActivityStatus.APPROVED || currentActivity.status === ActivityStatus.REJECTED) {
+        throw new HttpException(
+          StatusCodes.FORBIDDEN,
+          `No puedes modificar una actividad ${currentActivity.status === ActivityStatus.APPROVED ? 'aprobada' : 'rechazada'}. ` +
+          'Debes crear una nueva actividad. ' +
+          'Esto garantiza la integridad del historial y la trazabilidad de las operaciones.'
+        );
+      }
+
+      // OPERARIO: No puede cambiar el status (solo CAPATAZ/ADMIN pueden aprobar/rechazar)
+      if (req.user?.role === UserRole.OPERARIO && activityData.status !== undefined) {
+        throw new HttpException(
+          StatusCodes.FORBIDDEN,
+          'Un operario no puede cambiar el estado de una actividad. Solo un capataz o administrador puede aprobar o rechazar actividades.'
+        );
       }
 
       const updatedActivity = await this.activityService.update(id, activityData);

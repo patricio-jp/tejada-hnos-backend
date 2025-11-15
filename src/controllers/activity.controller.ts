@@ -210,6 +210,13 @@ export class ActivityController {
 
       // Verificar el estado de la WorkOrder
       const workOrder = currentActivity.workOrder;
+
+      // Limpiar campos undefined de activityData
+      Object.keys(activityData).forEach(key => {
+        if (activityData[key as keyof UpdateActivityDto] === undefined) {
+          delete activityData[key as keyof UpdateActivityDto];
+        }
+      });
       
       // Si solo está cambiando status a APPROVED/REJECTED (aprobación/rechazo)
       const isApprovalAction = activityData.status !== undefined && 

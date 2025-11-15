@@ -23,7 +23,7 @@ export const createFieldRoutes = (dataSource: DataSource): Router => {
    * @desc    Obtener todos los campos
    * @access  Logged-in users
    */
-  router.get('/', fieldController.getFields);
+  router.get('/', authorizeFieldAccess(dataSource), fieldController.getFields);
 
   /**
    * @route   GET /fields/:id

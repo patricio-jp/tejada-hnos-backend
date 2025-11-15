@@ -24,7 +24,6 @@ export const createInputRoutes = (dataSource: DataSource): Router => {
 
   router.get(
     '/',
-    authorize(UserRole.ADMIN, UserRole.CAPATAZ),
     inputController.getAll
   );
 

@@ -166,7 +166,10 @@ export class WorkOrderController {
 
         // Operario no puede modificar otros campos (solo status en transiciones permitidas)
         const allowedFields = ['status'];
-        const attemptedFields = Object.keys(workOrderData);
+        // Filtrar solo campos que tienen valor (no undefined)
+        const attemptedFields = Object.keys(workOrderData).filter(
+          key => workOrderData[key as keyof UpdateWorkOrderDto] !== undefined
+        );
         const invalidFields = attemptedFields.filter(field => !allowedFields.includes(field));
         
         if (invalidFields.length > 0) {

@@ -21,7 +21,7 @@ export const createPlotRoutes = (dataSource: DataSource): Router => {
    * @desc    Obtener todas las parcelas
    * @access  Logged-in users
    */
-  router.get('/', plotController.getPlots);
+  router.get('/', authorizeFieldAccess(dataSource), plotController.getPlots);
 
   /**
    * @route   GET /plots/:id

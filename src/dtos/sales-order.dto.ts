@@ -61,3 +61,35 @@ export class UpdateSalesOrderDto {
   @Type(() => SalesOrderDetailDto)
   details?: SalesOrderDetailDto[];
 }
+
+export class UpdateSalesOrderStatusDto {
+  @IsEnum(SalesOrderStatus, { message: 'El estado no es válido' })
+  @IsNotEmpty({ message: 'El estado no puede estar vacío' })
+  status: SalesOrderStatus;
+
+  @IsOptional()
+  @IsArray({ message: 'Los detalles deben ser un array' })
+  @ValidateNested({ each: true })
+  @Type(() => SalesOrderStatusDetailDto)
+  details?: SalesOrderStatusDetailDto[];
+}
+
+export class SalesOrderStatusDetailDto {
+  @IsUUID('4', { message: 'El ID del detalle debe ser un UUID válido' })
+  @IsNotEmpty({ message: 'El ID del detalle no puede estar vacío' })
+  detailId: string;
+
+  @IsOptional()
+  @IsEnum(SalesOrderDetailStatus, { message: 'El estado del detalle no es válido' })
+  status?: SalesOrderDetailStatus;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad enviada debe ser un número válido' })
+  @Min(0, { message: 'La cantidad enviada no puede ser negativa' })
+  quantityShipped?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio unitario debe ser un número válido' })
+  @Min(0, { message: 'El precio unitario no puede ser negativo' })
+  unitPrice?: number;
+}

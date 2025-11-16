@@ -186,6 +186,22 @@ export class ActivityService {
     }
 
     /**
+     * Obtener una WorkOrder por su ID
+     * Usado para validaciones de permisos en el controlador
+     */
+    public async getWorkOrderById(workOrderId: string): Promise<WorkOrder> {
+        const workOrder = await this.workOrderRepository.findOne({
+            where: { id: workOrderId }
+        });
+
+        if (!workOrder) {
+            throw new HttpException(StatusCodes.NOT_FOUND, "La orden de trabajo no fue encontrada.");
+        }
+
+        return workOrder;
+    }
+
+    /**
      * Actualizar una actividad por su ID
      * 
      * REGLAS DE MODIFICACIÓN DE INPUTS:

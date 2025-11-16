@@ -15,16 +15,17 @@ export enum ActivityType {
 }
 
 export enum ActivityStatus {
-  PENDING = 'PENDING', // Creada por OPERARIO, pendiente de aprobación
-  APPROVED = 'APPROVED', // Aprobada por CAPATAZ/ADMIN
-  REJECTED = 'REJECTED', // Rechazada por CAPATAZ/ADMIN
+  PENDING = 'PENDING',   // Registrada por OPERARIO, esperando revisión/aprobación
+  APPROVED = 'APPROVED', // Capataz validó stock y horas (stock descontado)
+  REJECTED = 'REJECTED', // Capataz rechazó por inconsistencias
 }
 
 export enum WorkOrderStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
+  PENDING = 'PENDING',           // Asignada, no iniciada
+  IN_PROGRESS = 'IN_PROGRESS',   // Operario está trabajando en ella
+  UNDER_REVIEW = 'UNDER_REVIEW', // Operario terminó, esperando aprobación de capataz
+  COMPLETED = 'COMPLETED',       // Capataz aprobó y cerró la orden
+  CANCELLED = 'CANCELLED',       // Cancelada por capataz/admin
 }
 
 export enum InputUnit {

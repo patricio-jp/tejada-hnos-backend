@@ -31,6 +31,41 @@ export class SalesOrderDetailDto {
   status?: SalesOrderDetailStatus;
 }
 
+export class UpdateSalesOrderDetailDto {
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID del detalle debe ser un UUID válido' })
+  id?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El calibre debe ser texto' })
+  @IsNotEmpty({ message: 'El calibre no puede estar vacío' })
+  caliber?: string;
+
+  @IsOptional()
+  @IsString({ message: 'La variedad debe ser texto' })
+  @IsNotEmpty({ message: 'La variedad no puede estar vacía' })
+  variety?: string;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio unitario debe ser un número válido' })
+  @Min(0, { message: 'El precio unitario no puede ser negativo' })
+  unitPrice?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad debe ser un número válido' })
+  @Min(0.01, { message: 'La cantidad debe ser mayor a 0' })
+  quantityKg?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad enviada debe ser un número válido' })
+  @Min(0, { message: 'La cantidad enviada no puede ser negativa' })
+  quantityShipped?: number;
+
+  @IsOptional()
+  @IsEnum(SalesOrderDetailStatus, { message: 'El estado del detalle no es válido' })
+  status?: SalesOrderDetailStatus;
+}
+
 export class CreateSalesOrderDto {
   @IsUUID('4', { message: 'El ID del cliente debe ser un UUID válido' })
   @IsNotEmpty({ message: 'El ID del cliente no puede estar vacío' })
@@ -58,8 +93,8 @@ export class UpdateSalesOrderDto {
   @IsOptional()
   @IsArray({ message: 'Los detalles deben ser un array' })
   @ValidateNested({ each: true })
-  @Type(() => SalesOrderDetailDto)
-  details?: SalesOrderDetailDto[];
+  @Type(() => UpdateSalesOrderDetailDto)
+  details?: UpdateSalesOrderDetailDto[];
 }
 
 export class UpdateSalesOrderStatusDto {

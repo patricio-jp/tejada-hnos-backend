@@ -148,23 +148,77 @@ export class PlotService {
    * @returns Promise<Plot>
    */
   async updatePlot(id: string, updatePlotDto: UpdatePlotDto): Promise<Plot> {
+    // Verificar que la parcela existe
     const plot = await this.getPlotById(id);
+    
     const { varietyId, ...plotFields } = updatePlotDto;
 
-    this.plotRepository.merge(plot, plotFields);
+    console.log('🔧 updatePlot - ID:', id);
+    console.log('🔧 updatePlot - plotFields recibidos:', JSON.stringify(plotFields, null, 2));
+    console.log('🔧 updatePlot - location recibido:', JSON.stringify(plotFields.location, null, 2));
+    console.log('🔧 updatePlot - varietyId:', varietyId);
 
-    if (varietyId) {
-      const variety = await this.varietyRepository.findOneBy({ id: varietyId });
-      if (!variety) {
-        throw new HttpException(
-          StatusCodes.NOT_FOUND,
-          `La variedad con ID ${varietyId} no fue encontrada.`
-        );
+    // Construir objeto de actualización
+    const updateData: any = { ...plotFields };
+    
+    // Manejar varietyId explícitamente
+    if (varietyId !== undefined) {
+      if (varietyId === null) {
+        // Si varietyId es null, desasociar la variedad
+        updateData.varietyId = null;
+      } else {
+        // Validar que la variedad existe
+        const variety = await this.varietyRepository.findOneBy({ id: varietyId });
+        if (!variety) {
+          throw new HttpException(
+            StatusCodes.NOT_FOUND,
+            `La variedad con ID ${varietyId} no fue encontrada.`
+          );
+        }
+        updateData.varietyId = varietyId;
       }
-      plot.variety = variety;
     }
 
-    return await this.plotRepository.save(plot);
+    console.log('🔧 updatePlot - updateData que se va a guardar:', JSON.stringify(updateData, null, 2));
+
+    // Usar update() de QueryBuilder para asegurar que se guarden correctamente
+    // Esto es más confiable que merge + save para propiedades JSONB
+    const updateResult = await this.plotRepository
+      .createQueryBuilder()
+      .update(Plot)
+      .set(updateData)
+      .where('id = :id', { id })
+      .execute();
+
+    console.log('🔧 updatePlot - SQL Execute Result:', updateResult);
+    console.log('🔧 updatePlot - Filas afectadas:', updateResult.affected);
+
+    if (updateResult.affected === 0) {
+      throw new HttpException(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'No se pudo actualizar la parcela.'
+      );
+    }
+
+    // ⭐ IMPORTANTE: Recuperar el plot actualizado CON todas las relaciones
+    // Usar findOne explícito para asegurar que las relaciones se cargan correctamente
+    const updatedPlot = await this.plotRepository.findOne({
+      where: { id },
+      relations: ['field', 'variety'],
+    });
+
+    if (!updatedPlot) {
+      throw new HttpException(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'No se pudo recuperar la parcela actualizada.'
+      );
+    }
+
+    console.log('🔧 updatePlot - plot recuperado después de update:', JSON.stringify(updatedPlot, null, 2));
+    console.log('🔧 updatePlot - location en plot actualizado:', JSON.stringify(updatedPlot.location, null, 2));
+    console.log('🔧 updatePlot - area en plot actualizado:', updatedPlot.area);
+    
+    return updatedPlot;
   }
 
   /**

@@ -6,6 +6,7 @@ import { Customer } from '@entities/customer.entity';
 import { HttpException } from '@/exceptions/HttpException';
 import { CreateSalesOrderDto, SalesOrderDetailDto, UpdateSalesOrderDto } from '@dtos/sales-order.dto';
 import { SalesOrderStatus, SalesOrderDetailStatus } from '@/enums';
+import { Shipment } from '@entities/shipment.entity';
 
 interface UpdateSalesOrderDetailPayload extends SalesOrderDetailDto {
   id?: string;
@@ -373,15 +374,22 @@ export class SalesOrderService {
   }
 
   public async hardDelete(id: string): Promise<SalesOrder> {
-    const salesOrder = await this.salesOrderRepository.findOne({
-      where: { id },
-      withDeleted: true,
+    return this.dataSource.transaction(async manager => {
+      const salesOrder = await manager.findOne(SalesOrder, {
+        where: { id },
+        withDeleted: true,
+      });
+
+      if (!salesOrder) {
+        throw new HttpException(StatusCodes.NOT_FOUND, 'Orden de venta no encontrada');
+      }
+
+      await manager.delete(SalesOrderDetail, { salesOrderId: id });
+      await manager.delete(Shipment, { salesOrderId: id });
+
+      await manager.remove(SalesOrder, salesOrder);
+
+      return salesOrder;
     });
-
-    if (!salesOrder) {
-      throw new HttpException(StatusCodes.NOT_FOUND, 'Orden de venta no encontrada');
-    }
-
-    return this.salesOrderRepository.remove(salesOrder);
   }
 }

@@ -45,9 +45,9 @@ export class SalesOrder {
   @JoinColumn({ name: 'customerId' })
   customer: Customer;
 
-  @OneToMany(() => SalesOrderDetail, detail => detail.salesOrder)
+  @OneToMany(() => SalesOrderDetail, detail => detail.salesOrder, { onDelete: 'CASCADE' })
   details: SalesOrderDetail[];
 
-  @OneToMany(() => Shipment, shipment => shipment.salesOrder)
+  @OneToMany(() => Shipment, shipment => shipment.salesOrder, { onDelete: 'CASCADE' })
   shipments: Shipment[];
 }

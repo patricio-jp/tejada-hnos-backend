@@ -132,6 +132,13 @@ export class SalesOrderService {
         throw new HttpException(StatusCodes.NOT_FOUND, 'Orden de venta no encontrada');
       }
 
+      if (salesOrder.status !== SalesOrderStatus.APROBADA) {
+        throw new HttpException(
+          StatusCodes.BAD_REQUEST,
+          'No se puede modificar una orden que no esté en estado APROBADA.'
+        );
+      }
+
       if (data.status && data.status !== salesOrder.status) {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'Use el método updateStatus para cambiar el estado de la orden de venta');
       }

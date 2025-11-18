@@ -4,20 +4,9 @@ import { SalesOrder } from '@entities/sale-order.entity';
 import { SalesOrderDetail } from '@entities/sale-order-detail.entity';
 import { Customer } from '@entities/customer.entity';
 import { HttpException } from '@/exceptions/HttpException';
-import { CreateSalesOrderDto, SalesOrderDetailDto, UpdateSalesOrderDto } from '@dtos/sales-order.dto';
+import { CreateSalesOrderDto, SalesOrderDetailDto, SalesOrderStatusDetailDto, UpdateSalesOrderDetailDto, UpdateSalesOrderDto } from '@dtos/sales-order.dto';
 import { SalesOrderStatus, SalesOrderDetailStatus } from '@/enums';
 import { Shipment } from '@entities/shipment.entity';
-
-interface UpdateSalesOrderDetailPayload extends SalesOrderDetailDto {
-  id?: string;
-}
-
-interface UpdateSalesOrderDetailStatusPayload {
-  detailId: string;
-  status?: SalesOrderDetailStatus;
-  quantityShipped?: number;
-  unitPrice?: number;
-}
 
 export class SalesOrderService {
   private salesOrderRepository: Repository<SalesOrder>;
@@ -150,8 +139,8 @@ export class SalesOrderService {
       }
 
       if (data.details && data.details.length > 0) {
-        const detailsPayload = data.details as UpdateSalesOrderDetailPayload[];
-        const detailsToUpdate = detailsPayload.filter((detail): detail is UpdateSalesOrderDetailPayload & { id: string } => Boolean(detail.id));
+        const detailsPayload = data.details as UpdateSalesOrderDetailDto[];
+        const detailsToUpdate = detailsPayload.filter((detail): detail is UpdateSalesOrderDetailDto & { id: string } => Boolean(detail.id));
         const detailsToCreate = detailsPayload.filter(detail => !detail.id);
         const detailIdsToKeep = new Set(detailsToUpdate.map(detail => detail.id));
 
@@ -207,7 +196,7 @@ export class SalesOrderService {
           }
         }
 
-        for (const newDetail of detailsToCreate) {
+        for (const newDetail of detailsToCreate as SalesOrderDetailDto[]) {
           await manager
             .createQueryBuilder()
             .insert()
@@ -265,7 +254,7 @@ export class SalesOrderService {
   public async updateStatus(
     id: string,
     status: SalesOrderStatus,
-    details?: Array<UpdateSalesOrderDetailStatusPayload>
+    details?: Array<SalesOrderStatusDetailDto>
   ): Promise<SalesOrder> {
     return this.dataSource.transaction(async manager => {
       const salesOrder = await manager.findOne(SalesOrder, {

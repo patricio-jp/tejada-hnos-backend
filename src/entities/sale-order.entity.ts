@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Transform } from 'class-transformer';
 import { Customer } from './customer.entity';
 import { Shipment } from './shipment.entity';
 import { SalesOrderDetail } from './sale-order-detail.entity';
@@ -12,9 +13,21 @@ export class SalesOrder {
   @Column({
     type: 'enum',
     enum: SalesOrderStatus,
-    default: SalesOrderStatus.PENDIENTE,
+    default: SalesOrderStatus.APROBADA,
   })
   status: SalesOrderStatus;
+
+  @Column('decimal', {
+    precision: 10,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
+  totalAmount: number;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -32,9 +45,9 @@ export class SalesOrder {
   @JoinColumn({ name: 'customerId' })
   customer: Customer;
 
-  @OneToMany(() => SalesOrderDetail, detail => detail.salesOrder, { cascade: true })
+  @OneToMany(() => SalesOrderDetail, detail => detail.salesOrder, { onDelete: 'CASCADE' })
   details: SalesOrderDetail[];
 
-  @OneToMany(() => Shipment, shipment => shipment.salesOrder)
+  @OneToMany(() => Shipment, shipment => shipment.salesOrder, { onDelete: 'CASCADE' })
   shipments: Shipment[];
 }

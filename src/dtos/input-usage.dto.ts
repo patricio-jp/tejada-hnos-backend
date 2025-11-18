@@ -5,9 +5,9 @@ export class CreateInputUsageDto {
   @IsNumber({}, { message: 'La cantidad utilizada debe ser un número válido' })
   quantityUsed: number;
 
-  @IsNotEmpty({ message: 'El ID de la actividad es obligatorio' })
+  @IsOptional()
   @IsUUID('4', { message: 'El ID de la actividad debe ser un UUID válido' })
-  activityId: string;
+  activityId?: string;
 
   @IsNotEmpty({ message: 'El ID del insumo es obligatorio' })
   @IsUUID('4', { message: 'El ID del insumo debe ser un UUID válido' })

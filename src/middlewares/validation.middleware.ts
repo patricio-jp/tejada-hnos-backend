@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+import { validate, ValidationError } from 'class-validator';
 import { Request, Response, NextFunction } from 'express';
 
 export function validateData(type: any, skipMissingProperties = false) {
@@ -18,16 +18,8 @@ export function validateData(type: any, skipMissingProperties = false) {
       validate(dtoInstance, { skipMissingProperties })
         .then((errors) => {
           if (errors.length > 0) {
-            // Map class-validator errors to an array of { field, message }
-            const formatted = errors.map(error => {
-              const constraints = error.constraints || {};
-              const messages = Object.values(constraints) as string[];
-              return {
-                field: error.property,
-                message: messages.join(', ')
-              };
-            });
-
+            // Usamos una función helper para extraer errores anidados (children)
+            const formatted = formatValidationErrors(errors);
             return res.status(400).json({ errors: formatted });
           } else {
             // Replace req.body with the typed DTO instance and continue
@@ -44,4 +36,32 @@ export function validateData(type: any, skipMissingProperties = false) {
       return res.status(400).json({ errors: [{ message: 'Invalid request body' }] });
     }
   };
+}
+
+/**
+ * Función auxiliar recursiva para aplanar los errores de class-validator.
+ * Si un error tiene 'children' (DTOs anidados), busca dentro de ellos.
+ */
+function formatValidationErrors(errors: ValidationError[]): { field: string, message: string }[] {
+  let result: { field: string, message: string }[] = [];
+
+  errors.forEach((error) => {
+    // 1. Si tiene restricciones directas (errores en este campo), las agregamos
+    if (error.constraints) {
+      const messages = Object.values(error.constraints);
+      // Usamos el nombre de la propiedad como field
+      result.push({
+        field: error.property,
+        message: messages.join(', ')
+      });
+    }
+
+    // 2. Si tiene hijos (errores anidados, ej: array de detalles), recursamos
+    if (error.children && error.children.length > 0) {
+      const childErrors = formatValidationErrors(error.children);
+      result = result.concat(childErrors);
+    }
+  });
+
+  return result;
 }

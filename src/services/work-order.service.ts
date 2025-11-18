@@ -68,6 +68,8 @@ export class WorkOrderService {
       .createQueryBuilder('workOrder')
       .leftJoinAndSelect('workOrder.assignedTo', 'user')
       .leftJoinAndSelect('workOrder.plots', 'plots')
+      .leftJoinAndSelect('plots.field', 'field')
+      .leftJoinAndSelect('plots.variety', 'variety')
       .leftJoinAndSelect('workOrder.activities', 'activities');
 
     // Aplicar filtros dinámicamente
@@ -128,7 +130,15 @@ export class WorkOrderService {
   public async findById(id: string): Promise<WorkOrder> {
     const workOrder = await this.workOrderRepository.findOne({
       where: { id },
-      relations: ['assignedTo', 'plots', 'activities', 'activities.inputsUsed']
+      relations: [
+        'assignedTo', 
+        'plots',
+        'plots.field',
+        'plots.variety',
+        'activities', 
+        'activities.inputsUsed',
+        'activities.inputsUsed.input',
+      ]
     });
     
     if (!workOrder) {

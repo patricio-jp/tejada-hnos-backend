@@ -27,9 +27,22 @@ export class FieldService {
    * Crear un nuevo campo
    * @param fieldData CreateFieldDto
    * @returns Promise<Field>
+   * @throws HttpException si el nombre ya existe
    */
   public async create(fieldData: CreateFieldDto): Promise<Field> {
     const { managerId, ...fieldFields } = fieldData;
+
+    // Validar nombre duplicado (solo en campos activos)
+    const existingField = await this.fieldRepository.findOne({
+      where: { name: fieldFields.name }
+    });
+
+    if (existingField) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        `Ya existe un campo con el nombre "${fieldFields.name}". Por favor, elige otro nombre.`
+      );
+    }
 
     const newField = this.fieldRepository.create(fieldFields);
 

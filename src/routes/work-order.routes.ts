@@ -53,12 +53,11 @@ export const createWorkOrderRoutes = (dataSource: DataSource): Router => {
   /**
    * @route   PUT /work-orders/:id
    * @desc    Actualizar una orden de trabajo por su ID
-   * @access  Admin y Capataz
+   * @access  Admin, Capataz y Operario asignado
    * @security Valida que el usuario tenga acceso a esta OT
    */
   router.put(
     '/:id',
-    authorize(UserRole.ADMIN, UserRole.CAPATAZ),
     authorizeFieldAccess(dataSource),
     validateData(UpdateWorkOrderDto),
     workOrderController.update

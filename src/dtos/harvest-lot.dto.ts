@@ -34,6 +34,11 @@ export class CreateHarvestLotDto {
   netWeightKg?: number;
 
   @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El peso neto en stock debe ser un número válido' })
+  @Min(0, { message: 'El peso neto en stock no puede ser negativo' })
+  remainingNetWeightKg?: number;
+
+  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El porcentaje de rendimiento debe ser un número válido' })
   @Min(0, { message: 'El porcentaje de rendimiento no puede ser negativo' })
   yieldPercentage?: number;
@@ -73,6 +78,11 @@ export class UpdateHarvestLotDto {
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El peso neto debe ser un número válido' })
   @Min(0, { message: 'El peso neto no puede ser negativo' })
   netWeightKg?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El peso neto en stock debe ser un número válido' })
+  @Min(0, { message: 'El peso neto en stock no puede ser negativo' })
+  remainingNetWeightKg?: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El porcentaje de rendimiento debe ser un número válido' })

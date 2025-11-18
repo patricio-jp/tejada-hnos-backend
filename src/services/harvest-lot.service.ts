@@ -203,6 +203,11 @@ export class HarvestLotService {
         ((updateHarvestLotDto.netWeightKg / harvestLot.grossWeightKg) * 100).toFixed(2)
       );
 
+      // Inicializar remainingNetWeightKg si es null
+      if (harvestLot.remainingNetWeightKg === null || harvestLot.remainingNetWeightKg === undefined) {
+        harvestLot.remainingNetWeightKg = updateHarvestLotDto.netWeightKg;
+      }
+
       // Si se registra peso neto, cambiar estado a EN_STOCK (procesado)
       if (!updateHarvestLotDto.status) {
         harvestLot.status = HarvestLotStatus.EN_STOCK;

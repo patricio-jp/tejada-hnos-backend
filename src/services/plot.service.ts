@@ -153,11 +153,6 @@ export class PlotService {
     
     const { varietyId, ...plotFields } = updatePlotDto;
 
-    console.log('🔧 updatePlot - ID:', id);
-    console.log('🔧 updatePlot - plotFields recibidos:', JSON.stringify(plotFields, null, 2));
-    console.log('🔧 updatePlot - location recibido:', JSON.stringify(plotFields.location, null, 2));
-    console.log('🔧 updatePlot - varietyId:', varietyId);
-
     // Construir objeto de actualización
     const updateData: any = { ...plotFields };
     
@@ -179,8 +174,6 @@ export class PlotService {
       }
     }
 
-    console.log('🔧 updatePlot - updateData que se va a guardar:', JSON.stringify(updateData, null, 2));
-
     // Usar update() de QueryBuilder para asegurar que se guarden correctamente
     // Esto es más confiable que merge + save para propiedades JSONB
     const updateResult = await this.plotRepository
@@ -189,9 +182,6 @@ export class PlotService {
       .set(updateData)
       .where('id = :id', { id })
       .execute();
-
-    console.log('🔧 updatePlot - SQL Execute Result:', updateResult);
-    console.log('🔧 updatePlot - Filas afectadas:', updateResult.affected);
 
     if (updateResult.affected === 0) {
       throw new HttpException(
@@ -213,10 +203,6 @@ export class PlotService {
         'No se pudo recuperar la parcela actualizada.'
       );
     }
-
-    console.log('🔧 updatePlot - plot recuperado después de update:', JSON.stringify(updatedPlot, null, 2));
-    console.log('🔧 updatePlot - location en plot actualizado:', JSON.stringify(updatedPlot.location, null, 2));
-    console.log('🔧 updatePlot - area en plot actualizado:', updatedPlot.area);
     
     return updatedPlot;
   }

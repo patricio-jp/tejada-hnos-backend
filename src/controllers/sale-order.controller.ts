@@ -4,19 +4,8 @@ import { instanceToPlain } from 'class-transformer';
 import { DataSource } from 'typeorm';
 import { HttpException } from '@/exceptions/HttpException';
 import { isValidUUID } from '@/utils/validation.utils';
-import { CreateSalesOrderDto, UpdateSalesOrderDto } from '@dtos/sales-order.dto';
+import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateSalesOrderStatusDto } from '@dtos/sales-order.dto';
 import { SalesOrderService } from '@services/sale-order.service';
-import { SalesOrderDetailStatus, SalesOrderStatus } from '@/enums';
-
-interface UpdateSalesOrderStatusDto {
-  status: SalesOrderStatus;
-  details?: Array<{
-    detailId: string;
-    status?: SalesOrderDetailStatus;
-    quantityShipped?: number;
-    unitPrice?: number;
-  }>;
-}
 
 export class SalesOrderController {
   private salesOrderService: SalesOrderService;

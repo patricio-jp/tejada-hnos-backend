@@ -48,7 +48,6 @@ export class SalesOrderService {
 
       const salesOrder = manager.create(SalesOrder, {
         customerId: data.customerId,
-        status: data.status ?? SalesOrderStatus.APROBADA,
         totalAmount,
       });
 
@@ -132,15 +131,11 @@ export class SalesOrderService {
         throw new HttpException(StatusCodes.NOT_FOUND, 'Orden de venta no encontrada');
       }
 
-      if (salesOrder.status !== SalesOrderStatus.APROBADA) {
+      if (salesOrder.status !== SalesOrderStatus.PENDIENTE) {
         throw new HttpException(
           StatusCodes.BAD_REQUEST,
-          'No se puede modificar una orden que no esté en estado APROBADA.'
+          'No se puede modificar una orden que no esté en estado PENDIENTE.'
         );
-      }
-
-      if (data.status && data.status !== salesOrder.status) {
-        throw new HttpException(StatusCodes.BAD_REQUEST, 'Use el método updateStatus para cambiar el estado de la orden de venta');
       }
 
       if (data.customerId && data.customerId !== salesOrder.customerId) {

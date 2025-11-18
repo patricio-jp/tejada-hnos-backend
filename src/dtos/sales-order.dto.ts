@@ -71,10 +71,6 @@ export class CreateSalesOrderDto {
   @IsNotEmpty({ message: 'El ID del cliente no puede estar vacío' })
   customerId: string;
 
-  @IsOptional()
-  @IsEnum(SalesOrderStatus, { message: 'El estado no es válido' })
-  status?: SalesOrderStatus;
-
   @IsArray({ message: 'Los detalles deben ser un array' })
   @ValidateNested({ each: true })
   @Type(() => SalesOrderDetailDto)
@@ -85,10 +81,6 @@ export class UpdateSalesOrderDto {
   @IsOptional()
   @IsUUID('4', { message: 'El ID del cliente debe ser un UUID válido' })
   customerId?: string;
-
-  @IsOptional()
-  @IsEnum(SalesOrderStatus, { message: 'El estado no es válido' })
-  status?: SalesOrderStatus;
 
   @IsOptional()
   @IsArray({ message: 'Los detalles deben ser un array' })

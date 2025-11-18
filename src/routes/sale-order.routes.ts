@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { DataSource } from 'typeorm';
 import { SalesOrderController } from '@controllers/sale-order.controller';
+import { ShipmentController } from '@controllers/shipment.controller';
 import { authenticate } from '@middlewares/auth.middleware';
 import { authorize } from '@middlewares/authorize.middleware';
 import { UserRole } from '@/enums';
@@ -10,6 +11,7 @@ import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateSalesOrderStatusDto } f
 export const createSalesOrderRoutes = (dataSource: DataSource): Router => {
   const router = Router();
   const salesOrderController = new SalesOrderController(dataSource);
+  const shipmentController = new ShipmentController(dataSource);
 
   router.use(authenticate);
 
@@ -62,6 +64,28 @@ export const createSalesOrderRoutes = (dataSource: DataSource): Router => {
     '/:id/permanent',
     authorize(UserRole.ADMIN),
     salesOrderController.hardDelete
+  );
+
+  /**
+   * @route   POST /sales-orders/:salesOrderId/shipments
+   * @desc    Crear un nuevo envío para una orden de venta
+   * @access  ADMIN, CAPATAZ
+   */
+  router.post(
+    '/:salesOrderId/shipments',
+    authorize(UserRole.ADMIN, UserRole.CAPATAZ),
+    shipmentController.createShipment
+  );
+
+  /**
+   * @route   GET /sales-orders/:salesOrderId/shipments
+   * @desc    Obtener todos los envíos de una orden de venta
+   * @access  ADMIN, CAPATAZ
+   */
+  router.get(
+    '/:salesOrderId/shipments',
+    authorize(UserRole.ADMIN, UserRole.CAPATAZ),
+    shipmentController.getShipmentsBySalesOrder
   );
 
   return router;

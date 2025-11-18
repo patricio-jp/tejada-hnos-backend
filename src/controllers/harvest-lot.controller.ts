@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { DataSource } from 'typeorm';
 import { HarvestLotService, HarvestLotFilters } from '@services/harvest-lot.service';
-import { CreateHarvestLotDto, UpdateHarvestLotDto } from '@dtos/harvest-lot.dto';
+import { CreateHarvestLotDto, UpdateHarvestLotDto, ProcessHarvestLotDto } from '@dtos/harvest-lot.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { HarvestLotStatus } from '@/enums';
@@ -108,7 +108,7 @@ export class HarvestLotController {
 
   /**
    * PUT /harvest-lots/:id
-   * Actualizar un lote de cosecha (actualizar peso neto y calcular rendimiento)
+   * Actualizar un lote de cosecha en estado PENDIENTE_PROCESO
    */
   public updateHarvestLot = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -124,6 +124,31 @@ export class HarvestLotController {
       res.status(StatusCodes.OK).json({
         data: instanceToPlain(harvestLot),
         message: 'Lote de cosecha actualizado exitosamente.'
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * PATCH /harvest-lots/:id/process
+   * Procesar/clasificar un lote (PENDIENTE_PROCESO → EN_STOCK)
+   * Establece varietyName, caliber, netWeightKg y hace el lote inmutable
+   */
+  public processHarvestLot = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const processHarvestLotDto: ProcessHarvestLotDto = req.body;
+
+      if (!id) {
+        throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID del lote es obligatorio.');
+      }
+
+      const harvestLot = await this.harvestLotService.process(id, processHarvestLotDto);
+
+      res.status(StatusCodes.OK).json({
+        data: instanceToPlain(harvestLot),
+        message: 'Lote de cosecha procesado y clasificado exitosamente'
       });
     } catch (error) {
       next(error);

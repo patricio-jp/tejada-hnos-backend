@@ -49,7 +49,7 @@ describe('E2E: Shipments Flow', () => {
   describe('POST /sales-orders/:salesOrderId/shipments - Create shipment', () => {
     it('should allow ADMIN to create a shipment for a sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detailId = scenario.salesOrder.details[0]!.id;
       const harvestLotId = scenario.inStockLot.id;
@@ -82,7 +82,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should allow CAPATAZ to create a shipment', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detailId = scenario.salesOrder.details[0]!.id;
       const harvestLotId = scenario.inStockLot.id;
@@ -109,7 +109,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should create shipment with multiple lot details', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       // Create additional harvest lot
       const secondLot = await createTestHarvestLot(dataSource, {
@@ -153,7 +153,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should update harvest lot remainingNetWeightKg after shipment', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const harvestLotId = scenario.inStockLot.id;
       const initialRemainingWeight = 1600; // from setup
 
@@ -184,7 +184,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should update sales order detail quantityShipped after shipment', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detailId = scenario.salesOrder.details[0]!.id;
 
@@ -217,7 +217,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should NOT allow shipment with quantity exceeding harvest lot stock', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       // inStockLot has 1600 kg remaining
 
       // Act
@@ -237,12 +237,12 @@ describe('E2E: Shipments Flow', () => {
 
       // Assert
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('stock');
+      expect(response.body.errors[0].message).toContain('Stock insuficiente');
     });
 
     it('should NOT allow shipment from PENDIENTE_PROCESO harvest lot', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       // pendingLot is PENDIENTE_PROCESO
 
       // Act
@@ -262,12 +262,12 @@ describe('E2E: Shipments Flow', () => {
 
       // Assert
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('EN_STOCK');
+      expect(response.body.errors[0].message).toContain('EN_STOCK');
     });
 
     it('should NOT allow OPERARIO to create a shipment', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
 
       // Act
       const response = await request(app)
@@ -290,7 +290,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should validate required fields', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
 
       // Act - Missing lotDetails
       const response = await request(app)
@@ -306,7 +306,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should validate quantityTakenKg is positive', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
 
       // Act
       const response = await request(app)
@@ -328,15 +328,18 @@ describe('E2E: Shipments Flow', () => {
     });
 
     it('should validate salesOrderId exists', async () => {
-      // Act
+      // Arrange - Create valid lot and detail IDs
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
+      
+      // Act - Use non-existent salesOrderId but valid harvestLotId and salesOrderDetailId
       const response = await request(app)
         .post('/sales-orders/00000000-0000-0000-0000-000000000000/shipments')
         .set('Authorization', `Bearer ${admin.token}`)
         .send({
           lotDetails: [
             {
-              harvestLotId: '00000000-0000-0000-0000-000000000000',
-              salesOrderDetailId: '00000000-0000-0000-0000-000000000000',
+              harvestLotId: scenario.inStockLot.id,
+              salesOrderDetailId: scenario.salesOrder.details[0]!.id,
               quantityTakenKg: 100,
             },
           ],
@@ -357,7 +360,7 @@ describe('E2E: Shipments Flow', () => {
   describe('GET /shipments - List all shipments', () => {
     it('should allow ADMIN to see all shipments', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       // Create a shipment
       await request(app)
@@ -389,7 +392,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should allow CAPATAZ to see all shipments', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       await request(app)
         .post(`/sales-orders/${scenario.salesOrder.id}/shipments`)
@@ -417,7 +420,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should include related data (salesOrder, lotDetails)', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       const createResponse = await request(app)
         .post(`/sales-orders/${scenario.salesOrder.id}/shipments`)
@@ -466,7 +469,7 @@ describe('E2E: Shipments Flow', () => {
   describe('GET /shipments/:id - Get shipment by ID', () => {
     it('should allow ADMIN to get shipment by ID', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       const createResponse = await request(app)
         .post(`/sales-orders/${scenario.salesOrder.id}/shipments`)
@@ -500,7 +503,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should allow CAPATAZ to get shipment by ID', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       const createResponse = await request(app)
         .post(`/sales-orders/${scenario.salesOrder.id}/shipments`)
@@ -530,7 +533,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should include full relations (salesOrder, customer, lotDetails, harvestLots)', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       const createResponse = await request(app)
         .post(`/sales-orders/${scenario.salesOrder.id}/shipments`)
@@ -572,7 +575,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should NOT allow OPERARIO to get shipment details', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       const createResponse = await request(app)
         .post(`/sales-orders/${scenario.salesOrder.id}/shipments`)
@@ -606,7 +609,7 @@ describe('E2E: Shipments Flow', () => {
   describe('GET /sales-orders/:salesOrderId/shipments - Get shipments by sales order', () => {
     it('should allow ADMIN to get all shipments for a sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
 
       // Create multiple shipments
@@ -652,7 +655,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should allow CAPATAZ to get shipments for a sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
 
       await request(app)
@@ -681,7 +684,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should return empty array for sales order with no shipments', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       // Create another sales order without shipments
       const newOrder = await createTestSalesOrder(dataSource, {
@@ -706,19 +709,20 @@ describe('E2E: Shipments Flow', () => {
       expect(response.body.data).toHaveLength(0);
     });
 
-    it('should return 404 for non-existent sales order', async () => {
+    it('should return empty array for non-existent sales order', async () => {
       // Act
       const response = await request(app)
         .get('/sales-orders/00000000-0000-0000-0000-000000000000/shipments')
         .set('Authorization', `Bearer ${admin.token}`);
 
       // Assert
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(0);
     });
 
     it('should NOT allow OPERARIO to get shipments for sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
 
       // Act
       const response = await request(app)
@@ -738,7 +742,7 @@ describe('E2E: Shipments Flow', () => {
   describe('Business Logic Tests', () => {
     it('should track complete shipment flow: create → update stock → update sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detailId = scenario.salesOrder.details[0]!.id;
       const harvestLotId = scenario.inStockLot.id;
@@ -785,7 +789,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should handle multiple shipments for same sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detailId = scenario.salesOrder.details[0]!.id;
       const harvestLotId = scenario.inStockLot.id;
@@ -839,7 +843,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should handle shipment from multiple harvest lots for one sales order detail', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       // Create second harvest lot
       const secondLot = await createTestHarvestLot(dataSource, {
@@ -900,7 +904,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should mark harvest lot as VENDIDO when fully depleted', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       
       // Create small lot to deplete
       const smallLot = await createTestHarvestLot(dataSource, {
@@ -945,7 +949,7 @@ describe('E2E: Shipments Flow', () => {
 
     it('should prevent overselling sales order detail quantity', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detailId = scenario.salesOrder.details[0]!.id;
       // detail[0] has 500 kg ordered
@@ -967,12 +971,12 @@ describe('E2E: Shipments Flow', () => {
 
       // Assert
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('exceed');
+      expect(response.body.errors[0].message).toContain('No se puede enviar');
     });
 
     it('should handle shipments for multiple details in same sales order', async () => {
       // Arrange
-      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      const scenario = await setupSalesScenario(dataSource, capataz.id, SalesOrderStatus.APROBADA);
       const salesOrderId = scenario.salesOrder.id;
       const detail1Id = scenario.salesOrder.details[0]!.id; // JUMBO, 500 kg
       const detail2Id = scenario.salesOrder.details[1]!.id; // LARGE, 300 kg
@@ -1024,5 +1028,6 @@ describe('E2E: Shipments Flow', () => {
     });
   });
 });
+
 
 

@@ -11,7 +11,10 @@ import { Customer } from '@/entities/customer.entity';
 import { HarvestLot } from '@/entities/harvest-lot.entity';
 import { SalesOrder } from '@/entities/sale-order.entity';
 import { Shipment } from '@/entities/shipment.entity';
-import { WorkOrderStatus, ActivityType, ActivityStatus, InputUnit, HarvestLotStatus, WalnutCaliber, SalesOrderStatus } from '@/enums';
+import { Supplier } from '@/entities/supplier.entity';
+import { PurchaseOrder } from '@/entities/purchase-order.entity';
+import { PurchaseOrderDetail } from '@/entities/purchase-order-detail.entity';
+import { WorkOrderStatus, ActivityType, ActivityStatus, InputUnit, HarvestLotStatus, WalnutCaliber, SalesOrderStatus, PurchaseOrderStatus } from '@/enums';
 import { GeoJSONPolygon } from '@/types';
 
 /**
@@ -512,7 +515,8 @@ export const setupHarvestScenario = async (
  */
 export const setupSalesScenario = async (
   dataSource: DataSource,
-  capatazId: string
+  capatazId: string,
+  salesOrderStatus?: SalesOrderStatus
 ) => {
   // Create harvest data
   const harvestScenario = await setupHarvestScenario(dataSource, capatazId);
@@ -526,10 +530,10 @@ export const setupSalesScenario = async (
     phoneNumber: '+56912345678',
   });
 
-  // Create sales order
+  // Create sales order - PENDIENTE por defecto, pero puede especificarse otro estado
   const salesOrder = await createTestSalesOrder(dataSource, {
     customerId: customer.id,
-    status: SalesOrderStatus.PENDIENTE,
+    status: salesOrderStatus || SalesOrderStatus.PENDIENTE,
     details: [
       {
         caliber: WalnutCaliber.JUMBO,
@@ -550,6 +554,146 @@ export const setupSalesScenario = async (
     ...harvestScenario,
     customer,
     salesOrder,
+  };
+};
+
+/**
+ * Creates a test supplier
+ */
+export const createTestSupplier = async (
+  dataSource: DataSource,
+  data: {
+    name: string;
+    contactEmail: string;
+    taxId?: string;
+    phoneNumber?: string;
+    address?: string;
+  }
+) => {
+  const supplierRepository = dataSource.getRepository(Supplier);
+  
+  const supplier = supplierRepository.create({
+    name: data.name,
+    contactEmail: data.contactEmail,
+    taxId: data.taxId || `${Math.floor(Math.random() * 100000000)}-${Math.floor(Math.random() * 10)}`,
+    phoneNumber: data.phoneNumber || '+56912345678',
+    address: data.address || 'Address test',
+  });
+
+  return await supplierRepository.save(supplier);
+};
+
+/**
+ * Creates a test purchase order
+ */
+export const createTestPurchaseOrder = async (
+  dataSource: DataSource,
+  data: {
+    supplierId: string;
+    status?: PurchaseOrderStatus;
+    details: Array<{
+      inputId: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+  }
+) => {
+  const purchaseOrderRepository = dataSource.getRepository(PurchaseOrder);
+  
+  // Calculate total amount
+  const totalAmount = data.details.reduce((sum, detail) => {
+    return sum + (detail.quantity * detail.unitPrice);
+  }, 0);
+
+  // Create purchase order
+  const purchaseOrder = purchaseOrderRepository.create({
+    supplierId: data.supplierId,
+    status: data.status || PurchaseOrderStatus.PENDIENTE,
+    totalAmount,
+  });
+
+  const savedOrder = await purchaseOrderRepository.save(purchaseOrder);
+
+  // Insert details using query builder
+  if (data.details && data.details.length > 0) {
+    await dataSource
+      .createQueryBuilder()
+      .insert()
+      .into(PurchaseOrderDetail)
+      .values(
+        data.details.map(detail => ({
+          purchaseOrderId: savedOrder.id,
+          inputId: detail.inputId,
+          quantity: detail.quantity,
+          unitPrice: detail.unitPrice,
+        }))
+      )
+      .execute();
+  }
+
+  // Reload with relations
+  const orderWithDetails = await purchaseOrderRepository.findOne({
+    where: { id: savedOrder.id },
+    relations: ['details', 'details.input', 'supplier'],
+  });
+
+  return orderWithDetails!;
+};
+
+/**
+ * Setup a complete purchase scenario with supplier and inputs
+ */
+export const setupPurchaseScenario = async (
+  dataSource: DataSource,
+  purchaseOrderStatus: PurchaseOrderStatus = PurchaseOrderStatus.PENDIENTE
+) => {
+  // Create supplier
+  const supplier = await createTestSupplier(dataSource, {
+    name: 'Proveedor Test S.A.',
+    contactEmail: 'proveedor@test.cl',
+    taxId: '76543210-5',
+    phoneNumber: '+56987654321',
+    address: 'Calle Principal 123',
+  });
+
+  // Create inputs
+  const fertilizerInput = await createTestInput(dataSource, {
+    name: 'Fertilizante NPK',
+    unit: InputUnit.KG,
+    costPerUnit: 5.50,
+    stock: 100,
+  });
+
+  const pesticideInput = await createTestInput(dataSource, {
+    name: 'Pesticida Orgánico',
+    unit: InputUnit.LITRO,
+    costPerUnit: 12.00,
+    stock: 50,
+  });
+
+  // Create purchase order
+  const purchaseOrder = await createTestPurchaseOrder(dataSource, {
+    supplierId: supplier.id,
+    status: purchaseOrderStatus,
+    details: [
+      {
+        inputId: fertilizerInput.id,
+        quantity: 500,
+        unitPrice: 5.00,
+      },
+      {
+        inputId: pesticideInput.id,
+        quantity: 200,
+        unitPrice: 11.50,
+      },
+    ],
+  });
+
+  return {
+    supplier,
+    fertilizerInput,
+    pesticideInput,
+    purchaseOrder,
   };
 };
 

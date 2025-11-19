@@ -27,8 +27,8 @@ export class HarvestLotService {
 
   /**
    * Crear un nuevo lote de cosecha en estado PENDIENTE_PROCESO
-   * Solo requiere peso bruto y datos básicos
-   * lotCode, varietyName y caliber pueden ser null para asignar después
+   * Requiere plotId, fecha, lotCode, varietyName y peso bruto
+   * caliber puede ser null para asignar después durante el procesamiento
    * @param createHarvestLotDto Datos del lote a crear
    * @returns Promise<HarvestLot>
    */
@@ -51,22 +51,20 @@ export class HarvestLotService {
       );
     }
 
-    // Verificar que el código de lote no exista (solo si se proporciona)
-    if (lotFields.lotCode) {
-      const existingLot = await this.harvestLotRepository.findOne({
-        where: { lotCode: lotFields.lotCode }
-      });
+    // Verificar que el código de lote no exista
+    const existingLot = await this.harvestLotRepository.findOne({
+      where: { lotCode: lotFields.lotCode }
+    });
 
-      if (existingLot) {
-        throw new HttpException(
-          StatusCodes.CONFLICT,
-          `Ya existe un lote con el código ${lotFields.lotCode}.`
-        );
-      }
+    if (existingLot) {
+      throw new HttpException(
+        StatusCodes.CONFLICT,
+        `Ya existe un lote con el código ${lotFields.lotCode}.`
+      );
     }
 
     // Crear el lote en estado PENDIENTE_PROCESO
-    // lotCode, varietyName, caliber pueden ser null
+    // caliber puede ser null para clasificar después
     // netWeightKg, remainingNetWeightKg y yieldPercentage quedan null hasta el proceso
     const harvestLot = this.harvestLotRepository.create({
       ...lotFields,

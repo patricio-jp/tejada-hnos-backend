@@ -3,8 +3,8 @@ import { IsEnum, IsISO8601, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, 
 
 /**
  * DTO para crear un lote de cosecha en estado PENDIENTE_PROCESO
- * Solo requiere peso bruto y datos básicos
- * varietyName, caliber y lotCode pueden dejarse null para asignar después
+ * Requiere peso bruto, código de lote y nombre de variedad
+ * caliber puede dejarse null para asignar después durante el procesamiento
  */
 export class CreateHarvestLotDto {
   @IsOptional()
@@ -15,13 +15,13 @@ export class CreateHarvestLotDto {
   @IsISO8601({}, { message: 'La fecha de cosecha debe ser una fecha válida' })
   harvestDate: Date;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'El código de lote es obligatorio' })
   @IsString({ message: 'El código de lote debe ser texto' })
-  lotCode?: string;
+  lotCode: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'El nombre de la variedad es obligatorio' })
   @IsString({ message: 'El nombre de la variedad debe ser texto' })
-  varietyName?: string;
+  varietyName: string;
 
   @IsOptional()
   @IsEnum(WalnutCaliber, { message: 'El calibre no es válido' })

@@ -18,13 +18,6 @@ export class PlotController {
   /**
    * GET /plots
    * Obtener todas las parcelas (adaptativo según contexto)
-   * @query ?fieldId=123&varietyId=456&minArea=50&maxArea=200
-   * @access Authenticated users
-   * 
-   * Comportamiento:
-   * - Sin filtros → Retorna solo datos de mapa (id, name, location)
-   * - Con filtros → Retorna datos completos (según permisos validados por middleware)
-   * - ADMIN → Siempre datos completos
    */
   public getPlots = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -44,6 +37,12 @@ export class PlotController {
 
       if (req.query.maxArea) {
         filters.maxArea = parseFloat(req.query.maxArea as string);
+      }
+
+      // <--- AGREGADO: Soporte para ver eliminados (parche con as any)
+      if (req.query.withDeleted === 'true') {
+        // Usamos as any por si la interfaz PlotFilters no tiene la propiedad tipada aun
+        (filters as any).withDeleted = true;
       }
 
       // Agregar managedFieldIds desde el middleware de autorización (para CAPATAZ)
@@ -72,139 +71,61 @@ export class PlotController {
     }
   };
 
-  /**
-   * GET /plots/:id
-   * Obtener una parcela por su ID
-   */
+  // -------------------------------------------------------------------------
+  // OTROS MÉTODOS (Sin cambios)
+  // -------------------------------------------------------------------------
+  
   public getPlotById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-
-      if (!id) {
-        throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
-      }
-
+      if (!id) throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
       const plot = await this.plotService.getPlotById(id);
-
-      res.status(StatusCodes.OK).json({
-        data: instanceToPlain(plot),
-        message: 'Parcela obtenida exitosamente.',
-      });
-    } catch (error) {
-      next(error);
-    }
+      res.status(StatusCodes.OK).json({ data: instanceToPlain(plot), message: 'Parcela obtenida exitosamente.' });
+    } catch (error) { next(error); }
   };
 
-  /**
-   * POST /plots
-   * Crear una nueva parcela
-   */
   public createPlot = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const plotData: CreatePlotDto = req.body;
       const newPlot = await this.plotService.createPlot(plotData);
-
-      res.status(StatusCodes.CREATED).json({
-        data: instanceToPlain(newPlot),
-        message: 'Parcela creada exitosamente.',
-      });
-    } catch (error) {
-      next(error);
-    }
+      res.status(StatusCodes.CREATED).json({ data: instanceToPlain(newPlot), message: 'Parcela creada exitosamente.' });
+    } catch (error) { next(error); }
   };
 
-  /**
-   * PUT /plots/:id
-   * Actualizar una parcela por su ID
-   */
   public updatePlot = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
       const plotData: UpdatePlotDto = req.body;
-
-      if (!id) {
-        throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
-      }
-
+      if (!id) throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
       const updatedPlot = await this.plotService.updatePlot(id, plotData);
-
-      res.status(StatusCodes.OK).json({
-        data: instanceToPlain(updatedPlot),
-        message: 'Parcela actualizada exitosamente.',
-      });
-    } catch (error) {
-      next(error);
-    }
+      res.status(StatusCodes.OK).json({ data: instanceToPlain(updatedPlot), message: 'Parcela actualizada exitosamente.' });
+    } catch (error) { next(error); }
   };
 
-  /**
-   * DELETE /plots/:id
-   * Eliminar una parcela (soft delete)
-   */
   public deletePlot = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-
-      if (!id) {
-        throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
-      }
-
+      if (!id) throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
       const deletedPlot = await this.plotService.deletePlot(id);
-
-      res.status(StatusCodes.OK).json({
-        data: instanceToPlain(deletedPlot),
-        message: 'Parcela eliminada exitosamente.',
-        canRestore: true,
-      });
-    } catch (error) {
-      next(error);
-    }
+      res.status(StatusCodes.OK).json({ data: instanceToPlain(deletedPlot), message: 'Parcela eliminada exitosamente.', canRestore: true });
+    } catch (error) { next(error); }
   };
 
-  /**
-   * POST /plots/:id/restore
-   * Restaurar una parcela eliminada
-   */
   public restorePlot = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-
-      if (!id) {
-        throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
-      }
-
+      if (!id) throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
       const restoredPlot = await this.plotService.restorePlot(id);
-
-      res.status(StatusCodes.OK).json({
-        data: instanceToPlain(restoredPlot),
-        message: 'Parcela restaurada exitosamente.',
-      });
-    } catch (error) {
-      next(error);
-    }
+      res.status(StatusCodes.OK).json({ data: instanceToPlain(restoredPlot), message: 'Parcela restaurada exitosamente.' });
+    } catch (error) { next(error); }
   };
 
-  /**
-   * DELETE /plots/:id/permanent
-   * Eliminar permanentemente una parcela (hard delete)
-   */
   public hardDeletePlot = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-
-      if (!id) {
-        throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
-      }
-
+      if (!id) throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la parcela es requerido.');
       const deletedPlot = await this.plotService.hardDeletePlot(id);
-
-      res.status(StatusCodes.OK).json({
-        data: instanceToPlain(deletedPlot),
-        message: 'Parcela eliminada permanentemente.',
-        canRestore: false,
-      });
-    } catch (error) {
-      next(error);
-    }
+      res.status(StatusCodes.OK).json({ data: instanceToPlain(deletedPlot), message: 'Parcela eliminada permanentemente.', canRestore: false });
+    } catch (error) { next(error); }
   };
 }

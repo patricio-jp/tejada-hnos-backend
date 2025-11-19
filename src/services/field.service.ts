@@ -72,14 +72,16 @@ export class FieldService {
    * @returns Promise<{ data: Field[] | Partial<Field>[]; count: number }>
    * 
    * Comportamiento:
-   * - Sin filtros + sin includeFullDetails → Solo datos de mapa (id, name, location)
-   * - Con filtros o ADMIN o includeFullDetails → Datos completos (area, address, manager, plots)
+   * - ADMIN: Todos los campos con datos completos (puede filtrar)
+   * - OPERARIO: Todos los campos solo con datos de mapa (id, name, location)
+   * - CAPATAZ: 
+   *   - Campos gestionados: datos completos (area, address, manager, plots)
+   *   - Campos NO gestionados: datos de mapa (id, name, location)
    * 
    * Ejemplos de uso:
-   * - findAll() → Todos los campos (solo mapa)
-   * - findAll({ includeFullDetails: true }) → Todos los campos (datos completos)
-   * - findAll({ filters: { managerId: '123' } }) → Campos de encargado (datos completos)
-   * - findAll({ filters: { managedFieldIds: [...] }, userRole: UserRole.CAPATAZ }) → Campos del CAPATAZ (datos completos)
+   * - findAll({ userRole: UserRole.ADMIN }) → Todos los campos (datos completos)
+   * - findAll({ userRole: UserRole.OPERARIO }) → Todos los campos (solo mapa)
+   * - findAll({ userRole: UserRole.CAPATAZ, filters: { managedFieldIds: [...] } }) → Diferenciado por campo
    */
   public async findAll(options: GetAllFieldsOptions = {}): Promise<{ data: (Field | Partial<Field>)[]; count: number }> {
     const { includeFullDetails = false, filters = {}, userId, userRole } = options;
@@ -87,31 +89,23 @@ export class FieldService {
     const queryBuilder = this.fieldRepository
       .createQueryBuilder('field');
 
-    // Determinar si debe incluir detalles completos
-    const hasFilters = 
-      filters.managerId !== undefined ||
-      filters.managedFieldIds !== undefined ||
-      filters.minArea !== undefined ||
-      filters.maxArea !== undefined;
-
-    const shouldIncludeDetails = 
-      includeFullDetails || 
-      userRole === UserRole.ADMIN ||
-      hasFilters;
-
-    if (shouldIncludeDetails) {
-      // Datos completos: incluir relaciones y todos los campos
-      queryBuilder
-        .leftJoinAndSelect('field.manager', 'manager')
-        .leftJoinAndSelect('field.plots', 'plots');
-    } else {
-      // Solo datos de mapa: proyección limitada
+    // OPERARIO: Solo datos de mapa (proyección limitada)
+    if (userRole === UserRole.OPERARIO) {
       queryBuilder.select([
         'field.id',
         'field.name',
         'field.location',
       ]);
+      
+      queryBuilder.orderBy('field.createdAt', 'DESC');
+      const [data, count] = await queryBuilder.getManyAndCount();
+      return { data, count };
     }
+
+    // ADMIN y CAPATAZ: Siempre cargar relaciones completas
+    queryBuilder
+      .leftJoinAndSelect('field.manager', 'manager')
+      .leftJoinAndSelect('field.plots', 'plots');
 
     // Aplicar filtros
     if (filters.managerId) {
@@ -132,18 +126,38 @@ export class FieldService {
       });
     }
 
-    // Filtro especial para CAPATAZ: Solo campos gestionados por él
-    if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
-      queryBuilder.andWhere('field.id IN (:...managedFieldIds)', {
-        managedFieldIds: filters.managedFieldIds
-      });
-    }
-
     queryBuilder.orderBy('field.createdAt', 'DESC');
 
-    const [data, count] = await queryBuilder.getManyAndCount();
+    const [allFields, count] = await queryBuilder.getManyAndCount();
 
-    return { data, count };
+    // ADMIN: Retornar todos los campos con detalles completos
+    if (userRole === UserRole.ADMIN) {
+      return { data: allFields, count };
+    }
+
+    // CAPATAZ: Proyección diferenciada por campo
+    if (userRole === UserRole.CAPATAZ) {
+      const managedFieldIds = filters.managedFieldIds || [];
+      
+      const data = allFields.map(field => {
+        // Si el campo es gestionado por este CAPATAZ, retornar info completa
+        if (managedFieldIds.includes(field.id)) {
+          return field;
+        }
+        
+        // Si NO es gestionado, retornar solo info básica para el mapa
+        return {
+          id: field.id,
+          name: field.name,
+          location: field.location,
+        };
+      });
+
+      return { data, count };
+    }
+
+    // Fallback: retornar datos completos
+    return { data: allFields, count };
   }
   
   /**

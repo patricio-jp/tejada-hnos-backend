@@ -6,6 +6,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { isValidUUID } from '@/utils/validation.utils';
 import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateSalesOrderStatusDto } from '@dtos/sales-order.dto';
 import { SalesOrderService } from '@services/sale-order.service';
+import { SalesOrderStatus } from '@/enums';
 
 export class SalesOrderController {
   private salesOrderService: SalesOrderService;
@@ -138,10 +139,53 @@ export class SalesOrderController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El estado es requerido para actualizar la orden de venta');
       }
 
+      // Obtener la orden actual para validar transiciones de estado
+      const currentOrder = await this.salesOrderService.findById(id);
+
+      // Validar transiciones de estado permitidas
+      if (data.status !== currentOrder.status) {
+        const allowedTransitions: Record<string, SalesOrderStatus[]> = {
+          [SalesOrderStatus.PENDIENTE]: [
+            SalesOrderStatus.APROBADA,
+            SalesOrderStatus.CANCELADA,
+          ],
+          [SalesOrderStatus.APROBADA]: [
+            SalesOrderStatus.DESPACHADA_PARCIAL,
+            SalesOrderStatus.DESPACHADA_TOTAL,
+            SalesOrderStatus.CANCELADA,
+          ],
+          [SalesOrderStatus.DESPACHADA_PARCIAL]: [
+            SalesOrderStatus.DESPACHADA_TOTAL,
+            SalesOrderStatus.PAGADA,
+            SalesOrderStatus.CERRADA,
+          ],
+          [SalesOrderStatus.DESPACHADA_TOTAL]: [
+            SalesOrderStatus.PAGADA,
+            SalesOrderStatus.CERRADA,
+          ],
+          [SalesOrderStatus.PAGADA]: [
+            SalesOrderStatus.CERRADA,
+          ],
+          [SalesOrderStatus.CERRADA]: [],
+          [SalesOrderStatus.CANCELADA]: [],
+        };
+
+        const allowed = allowedTransitions[currentOrder.status] || [];
+        
+        if (!allowed.includes(data.status)) {
+          throw new HttpException(
+            StatusCodes.BAD_REQUEST,
+            `No se puede cambiar el estado de la orden de venta de '${currentOrder.status}' a '${data.status}'. ` +
+            `Transiciones permitidas desde '${currentOrder.status}': ${allowed.length > 0 ? allowed.join(', ') : 'ninguna (estado final)'}`
+          );
+        }
+      }
+
       const salesOrder = await this.salesOrderService.updateStatus(id, data.status, data.details);
+      const transformed = this.transformSalesOrder(salesOrder);
 
       res.status(StatusCodes.OK).json({
-        data: instanceToPlain(salesOrder),
+        data: transformed,
         message: `Estado de la orden de venta actualizado a ${data.status}`,
       });
     } catch (error) {

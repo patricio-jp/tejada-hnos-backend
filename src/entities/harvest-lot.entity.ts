@@ -46,6 +46,13 @@ export class HarvestLot {
   @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
   netWeightKg: number; // Peso neto (seco) de planta
 
+  @Column('decimal', { precision: 10, scale: 2, nullable: true, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value),
+  }})
+  @Transform(({ value }) => parseFloat(value), { toPlainOnly: true })
+  remainingNetWeightKg: number; // Peso neto disponible (decrece con envíos)
+
   @Column('decimal', { precision: 5, scale: 2, nullable: true, transformer: {
     to: (value: number) => value,
     from: (value: string) => parseFloat(value),

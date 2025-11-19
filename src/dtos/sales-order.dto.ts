@@ -1,5 +1,5 @@
 import { SalesOrderDetailStatus, SalesOrderStatus } from "@/enums";
-import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 
 export class SalesOrderDetailDto {
@@ -20,15 +20,6 @@ export class SalesOrderDetailDto {
   @Min(0.01, { message: 'La cantidad debe ser mayor a 0' })
   @IsNotEmpty({ message: 'La cantidad no puede estar vacía' })
   quantityKg: number;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad enviada debe ser un número válido' })
-  @Min(0, { message: 'La cantidad enviada no puede ser negativa' })
-  quantityShipped?: number;
-
-  @IsOptional()
-  @IsEnum(SalesOrderDetailStatus, { message: 'El estado del detalle no es válido' })
-  status?: SalesOrderDetailStatus;
 }
 
 export class UpdateSalesOrderDetailDto {
@@ -55,15 +46,6 @@ export class UpdateSalesOrderDetailDto {
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad debe ser un número válido' })
   @Min(0.01, { message: 'La cantidad debe ser mayor a 0' })
   quantityKg?: number;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad enviada debe ser un número válido' })
-  @Min(0, { message: 'La cantidad enviada no puede ser negativa' })
-  quantityShipped?: number;
-
-  @IsOptional()
-  @IsEnum(SalesOrderDetailStatus, { message: 'El estado del detalle no es válido' })
-  status?: SalesOrderDetailStatus;
 }
 
 export class CreateSalesOrderDto {
@@ -72,6 +54,7 @@ export class CreateSalesOrderDto {
   customerId: string;
 
   @IsArray({ message: 'Los detalles deben ser un array' })
+  @ArrayMinSize(1, { message: 'Debe haber al menos un detalle en la orden de venta' })
   @ValidateNested({ each: true })
   @Type(() => SalesOrderDetailDto)
   details: SalesOrderDetailDto[];
@@ -109,11 +92,6 @@ export class SalesOrderStatusDetailDto {
   @IsOptional()
   @IsEnum(SalesOrderDetailStatus, { message: 'El estado del detalle no es válido' })
   status?: SalesOrderDetailStatus;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'La cantidad enviada debe ser un número válido' })
-  @Min(0, { message: 'La cantidad enviada no puede ser negativa' })
-  quantityShipped?: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio unitario debe ser un número válido' })

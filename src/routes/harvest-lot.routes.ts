@@ -5,7 +5,7 @@ import { authorize } from '@middlewares/authorize.middleware';
 import { UserRole } from '@/enums/index';
 import { DataSource } from 'typeorm';
 import { validateData } from '@/middlewares/validation.middleware';
-import { CreateHarvestLotDto, UpdateHarvestLotDto } from '@/dtos/harvest-lot.dto';
+import { CreateHarvestLotDto, UpdateHarvestLotDto, ProcessHarvestLotDto } from '@/dtos/harvest-lot.dto';
 
 export const createHarvestLotRoutes = (dataSource: DataSource): Router => {
   const router = Router();
@@ -50,14 +50,26 @@ export const createHarvestLotRoutes = (dataSource: DataSource): Router => {
 
   /**
    * @route   PUT /harvest-lots/:id
-   * @desc    Actualizar un lote de cosecha (actualizar peso neto y calcular rendimiento)
-   * @access  ADMIN (solo ADMIN puede actualizar peso neto)
+   * @desc    Actualizar un lote de cosecha en estado PENDIENTE_PROCESO
+   * @access  ADMIN, CAPATAZ
    */
   router.put(
     '/:id',
-    authorize(UserRole.ADMIN),
+    authorize(UserRole.ADMIN, UserRole.CAPATAZ),
     validateData(UpdateHarvestLotDto),
     harvestLotController.updateHarvestLot
+  );
+
+  /**
+   * @route   PATCH /harvest-lots/:id/process
+   * @desc    Procesar/clasificar un lote (PENDIENTE_PROCESO → EN_STOCK)
+   * @access  ADMIN, CAPATAZ
+   */
+  router.patch(
+    '/:id/process',
+    authorize(UserRole.ADMIN, UserRole.CAPATAZ),
+    validateData(ProcessHarvestLotDto),
+    harvestLotController.processHarvestLot
   );
 
   /**

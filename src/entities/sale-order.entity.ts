@@ -13,7 +13,7 @@ export class SalesOrder {
   @Column({
     type: 'enum',
     enum: SalesOrderStatus,
-    default: SalesOrderStatus.APROBADA,
+    default: SalesOrderStatus.PENDIENTE,
   })
   status: SalesOrderStatus;
 

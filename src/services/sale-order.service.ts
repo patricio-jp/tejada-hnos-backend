@@ -53,8 +53,8 @@ export class SalesOrderService {
             variety: detail.variety,
             unitPrice: Number(detail.unitPrice),
             quantityKg: Number(detail.quantityKg),
-            quantityShipped: detail.quantityShipped !== undefined ? Number(detail.quantityShipped) : 0,
-            status: detail.status ?? SalesOrderDetailStatus.PENDIENTE,
+            quantityShipped: 0,
+            status: SalesOrderDetailStatus.PENDIENTE,
           })
           .execute();
       }
@@ -172,14 +172,6 @@ export class SalesOrderService {
             updateData.quantityKg = Number(detailUpdate.quantityKg);
           }
 
-          if (detailUpdate.quantityShipped !== undefined) {
-            updateData.quantityShipped = Number(detailUpdate.quantityShipped);
-          }
-
-          if (detailUpdate.status !== undefined) {
-            updateData.status = detailUpdate.status;
-          }
-
           if (Object.keys(updateData).length > 0) {
             await manager
               .createQueryBuilder()
@@ -204,11 +196,11 @@ export class SalesOrderService {
             .values({
               salesOrderId: salesOrder.id,
               caliber: newDetail.caliber,
-              variety: newDetail.variety,
+              variety: newDetail.variety!,
               unitPrice: Number(newDetail.unitPrice),
               quantityKg: Number(newDetail.quantityKg),
-              quantityShipped: newDetail.quantityShipped !== undefined ? Number(newDetail.quantityShipped) : 0,
-              status: newDetail.status ?? SalesOrderDetailStatus.PENDIENTE,
+              quantityShipped: 0,
+              status: SalesOrderDetailStatus.PENDIENTE,
             })
             .execute();
         }
@@ -284,10 +276,6 @@ export class SalesOrderService {
 
           if (detailUpdate.status !== undefined) {
             updateData.status = detailUpdate.status;
-          }
-
-          if (detailUpdate.quantityShipped !== undefined) {
-            updateData.quantityShipped = Number(detailUpdate.quantityShipped);
           }
 
           if (detailUpdate.unitPrice !== undefined) {

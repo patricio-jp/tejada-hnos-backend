@@ -42,18 +42,15 @@ export class FieldController {
         filters.maxArea = parseFloat(req.query.maxArea as string);
       }
 
-      // Agregar managedFieldIds desde el middleware de autorización (para CAPATAZ)
-      if (req.requiredManagedFieldIds && req.requiredManagedFieldIds.length > 0) {
+      // Agregar managedFieldIds desde el middleware (para proyección diferenciada en CAPATAZ)
+      // Esto permite que el servicio sepa qué campos gestiona el CAPATAZ
+      // Incluso sin filtros, el servicio necesita esta info para decidir qué datos mostrar
+      if (req.requiredManagedFieldIds) {
         filters.managedFieldIds = req.requiredManagedFieldIds;
       }
 
-      // Determinar si debe incluir detalles completos
-      const hasFilters = Object.keys(req.query).length > 0;
-      const includeFullDetails = hasFilters || req.user?.role === UserRole.ADMIN;
-
       const result = await this.fieldService.findAll({
         filters,
-        includeFullDetails,
         ...(req.user?.userId && { userId: req.user.userId }),
         ...(req.user?.role && { userRole: req.user.role }),
       });

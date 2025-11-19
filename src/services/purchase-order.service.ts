@@ -459,15 +459,23 @@ export class PurchaseOrderService {
    * @returns Promise<PurchaseOrder> La orden de compra eliminada permanentemente
    */
   public async hardDelete(id: string): Promise<PurchaseOrder> {
-    const purchaseOrder = await this.purchaseOrderRepository.findOne({
-      where: { id },
-      withDeleted: true,
+    return this.dataSource.transaction(async manager => {
+      const purchaseOrder = await manager.findOne(PurchaseOrder, {
+        where: { id },
+        withDeleted: true,
+      });
+
+      if (!purchaseOrder) {
+        throw new HttpException(StatusCodes.NOT_FOUND, 'Orden de compra no encontrada');
+      }
+
+      // Eliminar primero las entidades hijas para evitar violación de foreign key
+      await manager.delete(PurchaseOrderDetail, { purchaseOrderId: id });
+
+      // Eliminar la orden de compra
+      await manager.remove(PurchaseOrder, purchaseOrder);
+
+      return purchaseOrder;
     });
-
-    if (!purchaseOrder) {
-      throw new HttpException(StatusCodes.NOT_FOUND, 'Orden de compra no encontrada');
-    }
-
-    return await this.purchaseOrderRepository.remove(purchaseOrder);
   }
 }

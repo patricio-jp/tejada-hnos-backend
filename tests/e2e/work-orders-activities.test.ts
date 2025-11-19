@@ -662,13 +662,13 @@ describe('E2E: Work Orders and Activities Flow', () => {
         .set('Authorization', `Bearer ${admin.token}`)
         .send({
           title: 'Updated Title',
-          status: WorkOrderStatus.COMPLETED,
+          status: WorkOrderStatus.UNDER_REVIEW,
         });
 
       // Assert
       expect(response.status).toBe(200);
       expect(response.body.data.title).toBe('Updated Title');
-      expect(response.body.data.status).toBe(WorkOrderStatus.COMPLETED);
+      expect(response.body.data.status).toBe(WorkOrderStatus.UNDER_REVIEW);
 
       // Verify in database
       const workOrderRepository = dataSource.getRepository(WorkOrder);
@@ -676,7 +676,7 @@ describe('E2E: Work Orders and Activities Flow', () => {
         where: { id: scenario.assignedWorkOrder.id },
       });
       expect(updated!.title).toBe('Updated Title');
-      expect(updated!.status).toBe(WorkOrderStatus.COMPLETED);
+      expect(updated!.status).toBe(WorkOrderStatus.UNDER_REVIEW);
     });
 
     it('should allow CAPATAZ to update work order from managed field', async () => {
@@ -2162,6 +2162,14 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(createWOResponse.status).toBe(201);
       const workOrderId = createWOResponse.body.data.id;
 
+      // Step 1.5: Change WorkOrder status to IN_PROGRESS (required before adding activities)
+      await request(app)
+        .put(`/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          status: WorkOrderStatus.IN_PROGRESS,
+        });
+
       // Step 2: OPERARIO creates an activity
       const createActivityResponse = await request(app)
         .post(`/work-orders/${workOrderId}/activities`)
@@ -2200,7 +2208,18 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(approveActivityResponse.status).toBe(200);
       expect(approveActivityResponse.body.data.status).toBe(ActivityStatus.APPROVED);
 
-      // Step 5: ADMIN marks work order as completed
+      // Step 5: ADMIN marks work order as under review
+      const underReviewResponse = await request(app)
+        .put(`/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          status: WorkOrderStatus.UNDER_REVIEW,
+        });
+
+      expect(underReviewResponse.status).toBe(200);
+      expect(underReviewResponse.body.data.status).toBe(WorkOrderStatus.UNDER_REVIEW);
+
+      // Step 6: ADMIN marks work order as completed
       const completeWOResponse = await request(app)
         .put(`/work-orders/${workOrderId}`)
         .set('Authorization', `Bearer ${admin.token}`)
@@ -2267,6 +2286,14 @@ describe('E2E: Work Orders and Activities Flow', () => {
 
       expect(createWOResponse.status).toBe(201);
       const workOrderId = createWOResponse.body.data.id;
+
+      // Step 1.5: Change WorkOrder status to IN_PROGRESS (required before adding activities)
+      await request(app)
+        .put(`/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${capataz.token}`)
+        .send({
+          status: WorkOrderStatus.IN_PROGRESS,
+        });
 
       // Step 2: OPERARIO creates an activity with inputs
       const createActivityResponse = await request(app)
@@ -2382,7 +2409,18 @@ describe('E2E: Work Orders and Activities Flow', () => {
       expect(pestUsage.quantityUsed).toBe(12.0);
       expect(herbUsage.quantityUsed).toBe(5.0);
 
-      // Step 7: CAPATAZ marks work order as completed
+      // Step 7: CAPATAZ marks work order as under review
+      const underReviewResponse = await request(app)
+        .put(`/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${capataz.token}`)
+        .send({
+          status: WorkOrderStatus.UNDER_REVIEW,
+        });
+
+      expect(underReviewResponse.status).toBe(200);
+      expect(underReviewResponse.body.data.status).toBe(WorkOrderStatus.UNDER_REVIEW);
+
+      // Step 8: CAPATAZ marks work order as completed
       const completeWOResponse = await request(app)
         .put(`/work-orders/${workOrderId}`)
         .set('Authorization', `Bearer ${capataz.token}`)

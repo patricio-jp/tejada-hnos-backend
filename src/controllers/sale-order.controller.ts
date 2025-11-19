@@ -139,9 +139,10 @@ export class SalesOrderController {
       }
 
       const salesOrder = await this.salesOrderService.updateStatus(id, data.status, data.details);
+      const transformed = this.transformSalesOrder(salesOrder);
 
       res.status(StatusCodes.OK).json({
-        data: instanceToPlain(salesOrder),
+        data: transformed,
         message: `Estado de la orden de venta actualizado a ${data.status}`,
       });
     } catch (error) {

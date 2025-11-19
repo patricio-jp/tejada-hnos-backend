@@ -87,12 +87,16 @@ export class FieldService {
           minArea: filters.minArea
         });
       }
-
+      if (filters.withDeleted) {
+      queryBuilder.withDeleted(); 
+    }
+  
       if (filters.maxArea) {
         queryBuilder.andWhere('field.area <= :maxArea', {
           maxArea: filters.maxArea
         });
       }
+      
 
       // Filtro especial para CAPATAZ: Solo campos gestionados por él
       if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
@@ -187,7 +191,8 @@ export class FieldService {
       throw new HttpException(StatusCodes.NOT_FOUND, "El campo no fue encontrado.");
     }
 
-    return await this.fieldRepository.recover(field);
+   await this.fieldRepository.recover(field);
+  return await this.findById(fieldId);
   }
 
   /**

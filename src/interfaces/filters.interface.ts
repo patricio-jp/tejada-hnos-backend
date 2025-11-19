@@ -32,6 +32,7 @@ export interface FieldFilters {
   minArea?: number;
   maxArea?: number;
   managedFieldIds?: string[]; // Para filtrar por campos gestionados (CAPATAZ)
+ withDeleted?: boolean; // Soporte para soft delete
 }
 
 /**

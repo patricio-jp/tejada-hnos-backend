@@ -7,6 +7,7 @@ import { isValidUUID } from '@/utils/validation.utils';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, UpdatePurchaseOrderStatusDto } from '@dtos/purchase-order.dto';
 import { DataSource } from 'typeorm';
 import { instanceToPlain } from 'class-transformer';
+import { PurchaseOrderStatus } from '@/enums';
 
 export class PurchaseOrderController {
   private purchaseOrderService: PurchaseOrderService;
@@ -166,6 +167,44 @@ export class PurchaseOrderController {
       }
 
       const data: UpdatePurchaseOrderStatusDto = req.body;
+
+      // Obtener la orden actual para validar transiciones de estado
+      const currentOrder = await this.purchaseOrderService.findById(id);
+
+      // Validar transiciones de estado permitidas
+      if (data.status !== currentOrder.status) {
+        const allowedTransitions: Record<string, PurchaseOrderStatus[]> = {
+          [PurchaseOrderStatus.PENDIENTE]: [
+            PurchaseOrderStatus.APROBADA,
+            PurchaseOrderStatus.CANCELADA,
+          ],
+          [PurchaseOrderStatus.APROBADA]: [
+            PurchaseOrderStatus.RECIBIDA_PARCIAL,
+            PurchaseOrderStatus.RECIBIDA,
+            PurchaseOrderStatus.CANCELADA,
+          ],
+          [PurchaseOrderStatus.RECIBIDA_PARCIAL]: [
+            PurchaseOrderStatus.RECIBIDA,
+            PurchaseOrderStatus.CERRADA,
+          ],
+          [PurchaseOrderStatus.RECIBIDA]: [
+            PurchaseOrderStatus.CERRADA,
+          ],
+          [PurchaseOrderStatus.CERRADA]: [],
+          [PurchaseOrderStatus.CANCELADA]: [],
+        };
+
+        const allowed = allowedTransitions[currentOrder.status] || [];
+        
+        if (!allowed.includes(data.status)) {
+          throw new HttpException(
+            StatusCodes.BAD_REQUEST,
+            `No se puede cambiar el estado de la orden de compra de '${currentOrder.status}' a '${data.status}'. ` +
+            `Transiciones permitidas desde '${currentOrder.status}': ${allowed.length > 0 ? allowed.join(', ') : 'ninguna (estado final)'}`
+          );
+        }
+      }
+
       const purchaseOrder = await this.purchaseOrderService.updateStatus(
         id, 
         data.status, 

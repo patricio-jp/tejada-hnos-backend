@@ -581,7 +581,13 @@ describe('E2E: Sales Orders Flow', () => {
       // Arrange
       const scenario = await setupSalesScenario(dataSource, capataz.id);
 
-      // Act
+      // Primero aprobar la orden (PENDIENTE → APROBADA)
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.APROBADA });
+
+      // Act - Ahora cambiar a DESPACHADA_PARCIAL (APROBADA → DESPACHADA_PARCIAL)
       const response = await request(app)
         .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
         .set('Authorization', `Bearer ${admin.token}`)
@@ -599,7 +605,13 @@ describe('E2E: Sales Orders Flow', () => {
       const scenario = await setupSalesScenario(dataSource, capataz.id);
       const detailId = scenario.salesOrder.details[0]!.id;
 
-      // Act
+      // Primero aprobar la orden (PENDIENTE → APROBADA)
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.APROBADA });
+
+      // Act - Ahora cambiar a DESPACHADA_PARCIAL con detalles
       const response = await request(app)
         .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
         .set('Authorization', `Bearer ${admin.token}`)
@@ -698,6 +710,119 @@ describe('E2E: Sales Orders Flow', () => {
         .patch('/sales-orders/some-id/status')
         .send({ status: SalesOrderStatus.APROBADA });
       expect(response.status).toBe(401);
+    });
+
+    // Tests de validación de transiciones de estado
+    it('should reject invalid state transition: PENDIENTE → CERRADA', async () => {
+      // Arrange
+      const scenario = await setupSalesScenario(dataSource, capataz.id);
+
+      // Act - Intentar saltar directamente a CERRADA
+      const response = await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          status: SalesOrderStatus.CERRADA,
+        });
+
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.body.errors[0].message).toContain('No se puede cambiar el estado');
+      expect(response.body.errors[0].message).toContain('PENDIENTE');
+      expect(response.body.errors[0].message).toContain('CERRADA');
+    });
+
+    it('should reject state change from final state: CERRADA → PENDIENTE', async () => {
+      // Arrange
+      const scenario = await setupSalesScenario(dataSource, capataz.id);
+      
+      // Avanzar a CERRADA siguiendo el flujo correcto
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.APROBADA });
+
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.DESPACHADA_TOTAL });
+
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.PAGADA });
+
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.CERRADA });
+
+      // Act - Intentar cambiar desde CERRADA
+      const response = await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          status: SalesOrderStatus.PENDIENTE,
+        });
+
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.body.errors[0].message).toContain('ninguna (estado final)');
+    });
+
+    it('should allow valid transition: PENDIENTE → APROBADA → DESPACHADA_TOTAL', async () => {
+      // Arrange
+      const scenario = await setupSalesScenario(dataSource, capataz.id);
+
+      // Act - PENDIENTE → APROBADA
+      const response1 = await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.APROBADA });
+
+      expect(response1.status).toBe(200);
+      expect(response1.body.data.status).toBe(SalesOrderStatus.APROBADA);
+
+      // Act - APROBADA → DESPACHADA_TOTAL
+      const response2 = await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.DESPACHADA_TOTAL });
+
+      // Assert
+      expect(response2.status).toBe(200);
+      expect(response2.body.data.status).toBe(SalesOrderStatus.DESPACHADA_TOTAL);
+    });
+
+    it('should reject cancellation from DESPACHADA_PARCIAL (operations already executed)', async () => {
+      // Arrange
+      const scenario = await setupSalesScenario(dataSource, capataz.id);
+
+      // Avanzar a DESPACHADA_PARCIAL
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.APROBADA });
+
+      await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.DESPACHADA_PARCIAL });
+
+      // Act - Intentar cancelar desde DESPACHADA_PARCIAL
+      const response = await request(app)
+        .patch(`/sales-orders/${scenario.salesOrder.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          status: SalesOrderStatus.CANCELADA,
+        });
+
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.body.errors[0].message).toContain('No se puede cambiar el estado');
+      expect(response.body.errors[0].message).toContain('DESPACHADA_PARCIAL');
+      expect(response.body.errors[0].message).toContain('CANCELADA');
+      expect(response.body.errors[0].message).not.toContain('CANCELADA,'); // No debe estar en las permitidas
     });
   });
 
@@ -991,6 +1116,12 @@ describe('E2E: Sales Orders Flow', () => {
 
       const orderId = createResponse.body.data.id;
       const detailId = createResponse.body.data.details[0].id;
+
+      // Primero aprobar la orden (PENDIENTE → APROBADA)
+      await request(app)
+        .patch(`/sales-orders/${orderId}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: SalesOrderStatus.APROBADA });
 
       // Try to update quantityShipped directly (should be ignored)
       const updateResponse = await request(app)

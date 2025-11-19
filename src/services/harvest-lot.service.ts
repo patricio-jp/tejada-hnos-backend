@@ -1,7 +1,7 @@
 import { DataSource, Repository } from 'typeorm';
 import { HarvestLot } from '@entities/harvest-lot.entity';
 import { Plot } from '@entities/plot.entity';
-import { CreateHarvestLotDto, UpdateHarvestLotDto } from '@dtos/harvest-lot.dto';
+import { CreateHarvestLotDto, UpdateHarvestLotDto, ProcessHarvestLotDto } from '@dtos/harvest-lot.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { StatusCodes } from 'http-status-codes';
 import { HarvestLotStatus } from '@/enums';
@@ -26,7 +26,9 @@ export class HarvestLotService {
   }
 
   /**
-   * Crear un nuevo lote de cosecha (registro de peso bruto)
+   * Crear un nuevo lote de cosecha en estado PENDIENTE_PROCESO
+   * Requiere plotId, fecha, lotCode, varietyName y peso bruto
+   * caliber puede ser null para asignar después durante el procesamiento
    * @param createHarvestLotDto Datos del lote a crear
    * @returns Promise<HarvestLot>
    */
@@ -61,12 +63,13 @@ export class HarvestLotService {
       );
     }
 
-    // Crear el lote (solo con peso bruto, estado PENDIENTE_PROCESO)
+    // Crear el lote en estado PENDIENTE_PROCESO
+    // caliber puede ser null para clasificar después
+    // netWeightKg, remainingNetWeightKg y yieldPercentage quedan null hasta el proceso
     const harvestLot = this.harvestLotRepository.create({
       ...lotFields,
       plotId,
       status: HarvestLotStatus.PENDIENTE_PROCESO,
-      // netWeightKg y yieldPercentage quedan null hasta que se procese
     });
 
     await this.harvestLotRepository.save(harvestLot);
@@ -161,7 +164,8 @@ export class HarvestLotService {
   }
 
   /**
-   * Actualizar un lote de cosecha por su ID (actualizar peso neto y calcular rendimiento)
+   * Actualizar un lote de cosecha en estado PENDIENTE_PROCESO
+   * Una vez que el lote está EN_STOCK, se vuelve inmutable
    * @param id ID del lote
    * @param updateHarvestLotDto Datos a actualizar
    * @returns Promise<HarvestLot>
@@ -169,15 +173,14 @@ export class HarvestLotService {
   async update(id: string, updateHarvestLotDto: UpdateHarvestLotDto): Promise<HarvestLot> {
     const harvestLot = await this.findById(id);
 
-    // Si se actualiza el plotId, verificar que existe
-    if (updateHarvestLotDto.plotId && updateHarvestLotDto.plotId !== harvestLot.plotId) {
-      const plot = await this.plotRepository.findOneBy({ id: updateHarvestLotDto.plotId });
-      if (!plot) {
-        throw new HttpException(
-          StatusCodes.NOT_FOUND,
-          `La parcela con ID ${updateHarvestLotDto.plotId} no fue encontrada.`
-        );
-      }
+    // Validar que el lote esté en PENDIENTE_PROCESO
+    if (harvestLot.status !== HarvestLotStatus.PENDIENTE_PROCESO) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        `No se puede actualizar un lote en estado ${harvestLot.status}. ` +
+        `Solo los lotes en PENDIENTE_PROCESO pueden ser modificados. ` +
+        `Use el endpoint de procesamiento para clasificar el lote.`
+      );
     }
 
     // Si se actualiza el código de lote, verificar que no exista otro con ese código
@@ -194,20 +197,70 @@ export class HarvestLotService {
       }
     }
 
-    // Actualizar campos
+    // Actualizar solo los campos permitidos
     this.harvestLotRepository.merge(harvestLot, updateHarvestLotDto);
 
-    // Calcular yieldPercentage si se proporciona netWeightKg
-    if (updateHarvestLotDto.netWeightKg !== undefined && harvestLot.grossWeightKg > 0) {
-      harvestLot.yieldPercentage = parseFloat(
-        ((updateHarvestLotDto.netWeightKg / harvestLot.grossWeightKg) * 100).toFixed(2)
-      );
+    return await this.harvestLotRepository.save(harvestLot);
+  }
 
-      // Si se registra peso neto, cambiar estado a EN_STOCK (procesado)
-      if (!updateHarvestLotDto.status) {
-        harvestLot.status = HarvestLotStatus.EN_STOCK;
+  /**
+   * Procesar/clasificar un lote de cosecha (PENDIENTE_PROCESO → EN_STOCK)
+   * Establece varietyName, caliber, netWeightKg y hace el lote inmutable
+   * @param id ID del lote
+   * @param processDto Datos del procesamiento
+   * @returns Promise<HarvestLot>
+   */
+  async process(id: string, processDto: ProcessHarvestLotDto): Promise<HarvestLot> {
+    const harvestLot = await this.findById(id);
+
+    // Validar que el lote esté en PENDIENTE_PROCESO
+    if (harvestLot.status !== HarvestLotStatus.PENDIENTE_PROCESO) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        `No se puede procesar un lote en estado ${harvestLot.status}. ` +
+        `Solo los lotes en PENDIENTE_PROCESO pueden ser procesados.`
+      );
+    }
+
+    // Validar que netWeightKg no exceda grossWeightKg
+    if (processDto.netWeightKg > harvestLot.grossWeightKg) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        `El peso neto (${processDto.netWeightKg} kg) no puede ser mayor al peso bruto (${harvestLot.grossWeightKg} kg).`
+      );
+    }
+
+    // Si se proporciona un nuevo lotCode, verificar que no exista
+    if (processDto.lotCode && processDto.lotCode !== harvestLot.lotCode) {
+      const existingLot = await this.harvestLotRepository.findOne({
+        where: { lotCode: processDto.lotCode }
+      });
+
+      if (existingLot) {
+        throw new HttpException(
+          StatusCodes.CONFLICT,
+          `Ya existe un lote con el código ${processDto.lotCode}.`
+        );
       }
     }
+
+    // Establecer todos los campos del procesamiento
+    if (processDto.lotCode) {
+      harvestLot.lotCode = processDto.lotCode;
+    }
+    
+    harvestLot.varietyName = processDto.varietyName;
+    harvestLot.caliber = processDto.caliber;
+    harvestLot.netWeightKg = processDto.netWeightKg;
+    harvestLot.remainingNetWeightKg = processDto.netWeightKg; // Inicializar stock disponible
+
+    // Calcular rendimiento
+    harvestLot.yieldPercentage = parseFloat(
+      ((processDto.netWeightKg / harvestLot.grossWeightKg) * 100).toFixed(2)
+    );
+
+    // Cambiar estado a EN_STOCK (ahora es inmutable)
+    harvestLot.status = HarvestLotStatus.EN_STOCK;
 
     return await this.harvestLotRepository.save(harvestLot);
   }

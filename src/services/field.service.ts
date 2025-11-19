@@ -7,6 +7,13 @@ import { HttpException } from "../exceptions/HttpException";
 import { DataSource, Repository } from "typeorm";
 import { UserRole } from "@/enums";
 
+interface GetAllFieldsOptions {
+  includeFullDetails?: boolean;
+  filters?: FieldFilters;
+  userId?: string;
+  userRole?: UserRole;
+}
+
 export class FieldService {
   private fieldRepository: Repository<Field>;
   private userRepository: Repository<User>;
@@ -60,18 +67,43 @@ export class FieldService {
   }
 
   /**
-   * Obtener todos los campos con filtros opcionales
-   * @param filters Filtros opcionales para la búsqueda
-   * @returns Promise<Field[]>
+   * Obtener todos los campos con proyección adaptativa según contexto
+   * @param options Opciones de búsqueda y proyección
+   * @returns Promise<{ data: Field[] | Partial<Field>[]; count: number }>
+   * 
+   * Comportamiento:
+   * - ADMIN: Todos los campos con datos completos (puede filtrar)
+   * - OPERARIO: Todos los campos solo con datos de mapa (id, name, location)
+   * - CAPATAZ: 
+   *   - Campos gestionados: datos completos (area, address, manager, plots)
+   *   - Campos NO gestionados: datos de mapa (id, name, location)
    * 
    * Ejemplos de uso:
-   * - findAll() → Todos los campos
-   * - findAll({ managerId: '123' }) → Campos de un encargado específico
-   * - findAll({ minArea: 100, maxArea: 500 }) → Campos por rango de área
+   * - findAll({ userRole: UserRole.ADMIN }) → Todos los campos (datos completos)
+   * - findAll({ userRole: UserRole.OPERARIO }) → Todos los campos (solo mapa)
+   * - findAll({ userRole: UserRole.CAPATAZ, filters: { managedFieldIds: [...] } }) → Diferenciado por campo
    */
-  public async findAll(filters?: FieldFilters): Promise<Field[]> {
+  public async findAll(options: GetAllFieldsOptions = {}): Promise<{ data: (Field | Partial<Field>)[]; count: number }> {
+    const { includeFullDetails = false, filters = {}, userId, userRole } = options;
+
     const queryBuilder = this.fieldRepository
-      .createQueryBuilder('field')
+      .createQueryBuilder('field');
+
+    // OPERARIO: Solo datos de mapa (proyección limitada)
+    if (userRole === UserRole.OPERARIO) {
+      queryBuilder.select([
+        'field.id',
+        'field.name',
+        'field.location',
+      ]);
+      
+      queryBuilder.orderBy('field.createdAt', 'DESC');
+      const [data, count] = await queryBuilder.getManyAndCount();
+      return { data, count };
+    }
+
+    // ADMIN y CAPATAZ: Siempre cargar relaciones completas
+    queryBuilder
       .leftJoinAndSelect('field.manager', 'manager')
       .leftJoinAndSelect('field.plots', 'plots');
 
@@ -98,17 +130,44 @@ export class FieldService {
       }
       
 
-      // Filtro especial para CAPATAZ: Solo campos gestionados por él
-      if (filters.managedFieldIds && filters.managedFieldIds.length > 0) {
-        queryBuilder.andWhere('field.id IN (:...managedFieldIds)', {
-          managedFieldIds: filters.managedFieldIds
-        });
-      }
+    if (filters.maxArea) {
+      queryBuilder.andWhere('field.area <= :maxArea', {
+        maxArea: filters.maxArea
+      });
     }
 
     queryBuilder.orderBy('field.createdAt', 'DESC');
 
-    return await queryBuilder.getMany();
+    const [allFields, count] = await queryBuilder.getManyAndCount();
+
+    // ADMIN: Retornar todos los campos con detalles completos
+    if (userRole === UserRole.ADMIN) {
+      return { data: allFields, count };
+    }
+
+    // CAPATAZ: Proyección diferenciada por campo
+    if (userRole === UserRole.CAPATAZ) {
+      const managedFieldIds = filters.managedFieldIds || [];
+      
+      const data = allFields.map(field => {
+        // Si el campo es gestionado por este CAPATAZ, retornar info completa
+        if (managedFieldIds.includes(field.id)) {
+          return field;
+        }
+        
+        // Si NO es gestionado, retornar solo info básica para el mapa
+        return {
+          id: field.id,
+          name: field.name,
+          location: field.location,
+        };
+      });
+
+      return { data, count };
+    }
+
+    // Fallback: retornar datos completos
+    return { data: allFields, count };
   }
   
   /**

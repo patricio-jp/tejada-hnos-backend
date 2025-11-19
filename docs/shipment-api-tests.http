@@ -1,0 +1,292 @@
+### Shipments API - Ejemplos de Prueba
+### Archivo para Thunder Client, REST Client (VS Code), o Postman
+
+# Variables (ajustar según tu entorno)
+@baseUrl = http://localhost:3000
+@token = YOUR_JWT_TOKEN_HERE
+@salesOrderId = YOUR_SALES_ORDER_ID
+@harvestLotId = YOUR_HARVEST_LOT_ID
+@salesOrderDetailId = YOUR_SALES_ORDER_DETAIL_ID
+@shipmentId = YOUR_SHIPMENT_ID
+
+###############################################
+# 1. LOGIN (obtener token)
+###############################################
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!"
+}
+
+###############################################
+# 2. CREAR ENVÍO - Envío Parcial (300kg)
+###############################################
+
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "TRACK-001",
+  "notes": "Primer envío parcial - 300kg",
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": 300
+    }
+  ]
+}
+
+###############################################
+# 3. CREAR ENVÍO - Completar (700kg restantes)
+###############################################
+
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "TRACK-002",
+  "notes": "Envío final - completando orden",
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": 700
+    }
+  ]
+}
+
+###############################################
+# 4. CREAR ENVÍO - Múltiples Lotes
+###############################################
+
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "TRACK-003",
+  "notes": "Envío desde múltiples lotes",
+  "lotDetails": [
+    {
+      "harvestLotId": "uuid-lote-1",
+      "salesOrderDetailId": "uuid-detail-1",
+      "quantityTakenKg": 200
+    },
+    {
+      "harvestLotId": "uuid-lote-2",
+      "salesOrderDetailId": "uuid-detail-2",
+      "quantityTakenKg": 350
+    },
+    {
+      "harvestLotId": "uuid-lote-3",
+      "salesOrderDetailId": "uuid-detail-3",
+      "quantityTakenKg": 450
+    }
+  ]
+}
+
+###############################################
+# 5. OBTENER TODOS LOS ENVÍOS
+###############################################
+
+GET {{baseUrl}}/shipments
+Authorization: Bearer {{token}}
+
+###############################################
+# 6. OBTENER ENVÍO POR ID
+###############################################
+
+GET {{baseUrl}}/shipments/{{shipmentId}}
+Authorization: Bearer {{token}}
+
+###############################################
+# 7. OBTENER ENVÍOS DE UNA ORDEN
+###############################################
+
+GET {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+
+###############################################
+# 8. OBTENER ORDEN DE VENTA (para ver estados)
+###############################################
+
+GET {{baseUrl}}/sale-orders/{{salesOrderId}}
+Authorization: Bearer {{token}}
+
+###############################################
+# 9. OBTENER LOTE DE COSECHA (para ver stock)
+###############################################
+
+GET {{baseUrl}}/harvest-lots/{{harvestLotId}}
+Authorization: Bearer {{token}}
+
+###############################################
+# PRUEBAS DE ERROR
+###############################################
+
+### Error: Stock Insuficiente
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": 999999
+    }
+  ]
+}
+
+### Error: Sin lotDetails
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "TRACK-ERROR",
+  "notes": "Esto debería fallar",
+  "lotDetails": []
+}
+
+### Error: Cantidad negativa
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": -100
+    }
+  ]
+}
+
+### Error: UUID inválido
+POST {{baseUrl}}/sale-orders/invalid-uuid/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": 100
+    }
+  ]
+}
+
+###############################################
+# FLUJO COMPLETO DE PRUEBA
+###############################################
+
+### 1. Crear Cliente
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "businessName": "Cliente Test SA",
+  "taxId": "20-12345678-9",
+  "email": "test@cliente.com",
+  "phone": "1234567890",
+  "address": "Calle Test 123",
+  "city": "Mendoza",
+  "province": "Mendoza"
+}
+
+### 2. Crear Orden de Venta
+POST {{baseUrl}}/sale-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "status": "APROBADA",
+  "details": [
+    {
+      "variety": "Chandler",
+      "caliber": "LARGE",
+      "quantityKg": 1000,
+      "unitPrice": 5.50
+    }
+  ]
+}
+
+### 3. Verificar que existe un Lote EN_STOCK
+GET {{baseUrl}}/harvest-lots?status=EN_STOCK
+Authorization: Bearer {{token}}
+
+### 4. Crear Envío Parcial (300kg)
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "TEST-TRACK-001",
+  "notes": "Envío de prueba - 300kg de 1000kg",
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": 300
+    }
+  ]
+}
+
+### 5. Verificar Estado de la Orden (debe ser DESPACHADA_PARCIAL)
+GET {{baseUrl}}/sale-orders/{{salesOrderId}}
+Authorization: Bearer {{token}}
+
+### 6. Verificar Stock del Lote (debe haber disminuido)
+GET {{baseUrl}}/harvest-lots/{{harvestLotId}}
+Authorization: Bearer {{token}}
+
+### 7. Completar Envío (700kg restantes)
+POST {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "TEST-TRACK-002",
+  "notes": "Completando orden - 700kg restantes",
+  "lotDetails": [
+    {
+      "harvestLotId": "{{harvestLotId}}",
+      "salesOrderDetailId": "{{salesOrderDetailId}}",
+      "quantityTakenKg": 700
+    }
+  ]
+}
+
+### 8. Verificar Estado Final (debe ser DESPACHADA_TOTAL)
+GET {{baseUrl}}/sale-orders/{{salesOrderId}}
+Authorization: Bearer {{token}}
+
+### 9. Verificar Todos los Envíos de la Orden
+GET {{baseUrl}}/sale-orders/{{salesOrderId}}/shipments
+Authorization: Bearer {{token}}
+
+###############################################
+# NOTAS
+###############################################
+
+# 1. Reemplazar las variables {{}} con valores reales antes de ejecutar
+# 2. Primero hacer login para obtener el token JWT
+# 3. Asegurarse de que:
+#    - La orden esté en estado APROBADA o DESPACHADA_PARCIAL
+#    - El lote esté en estado EN_STOCK
+#    - El lote tenga peso neto (netWeightKg) definido
+#    - La variedad y calibre del lote coincidan con el pedido
+# 4. Para testing local, usar: http://localhost:3000
+# 5. Para testing en desarrollo, ajustar el baseUrl según corresponda

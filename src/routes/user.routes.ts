@@ -19,7 +19,7 @@ export const createUserRoutes = (dataSource: DataSource): Router => {
    * @desc    Obtener todos los usuarios
    * @access  Admin only
    */
-  router.get('/', authorize(UserRole.ADMIN), userController.getAll);
+  router.get('/', authorize(UserRole.ADMIN, UserRole.CAPATAZ), userController.getAll);
 
   /**
    * @route   GET /users/:id

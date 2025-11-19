@@ -5,6 +5,8 @@ import { FieldFilters } from '@/interfaces/filters.interface';
 import { CreateFieldDto, UpdateFieldDto } from '@dtos/field.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { DataSource } from 'typeorm';
+import { UserRole } from '@/enums';
+import { instanceToPlain } from 'class-transformer';
 
 export class FieldController {
   private fieldService: FieldService;
@@ -15,7 +17,14 @@ export class FieldController {
 
   /**
    * GET /fields
-   * Obtener todos los campos con filtros opcionales
+   * Obtener todos los campos (adaptativo según contexto)
+   * @query ?managerId=123&minArea=50&maxArea=200
+   * @access Authenticated users
+   * 
+   * Comportamiento:
+   * - Sin filtros → Retorna solo datos de mapa (id, name, location)
+   * - Con filtros → Retorna datos completos (según permisos validados por middleware)
+   * - ADMIN → Siempre datos completos
    */
   public getFields = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -46,10 +55,22 @@ export class FieldController {
       const fields = await this.fieldService.findAll(
         Object.keys(filters).length > 0 ? filters : undefined
       );
+      // Agregar managedFieldIds desde el middleware (para proyección diferenciada en CAPATAZ)
+      // Esto permite que el servicio sepa qué campos gestiona el CAPATAZ
+      // Incluso sin filtros, el servicio necesita esta info para decidir qué datos mostrar
+      if (req.requiredManagedFieldIds) {
+        filters.managedFieldIds = req.requiredManagedFieldIds;
+      }
+
+      const result = await this.fieldService.findAll({
+        filters,
+        ...(req.user?.userId && { userId: req.user.userId }),
+        ...(req.user?.role && { userRole: req.user.role }),
+      });
 
       res.status(StatusCodes.OK).json({
-        data: fields,
-        count: fields.length,
+        data: instanceToPlain(result.data),
+        count: result.count,
         message: 'Campos obtenidos exitosamente.',
       });
     } catch (error) {
@@ -72,7 +93,7 @@ export class FieldController {
       const field = await this.fieldService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: field,
+        data: instanceToPlain(field),
         message: 'Campo obtenido exitosamente.',
       });
     } catch (error) {
@@ -90,7 +111,7 @@ export class FieldController {
       const newField = await this.fieldService.create(fieldData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newField,
+        data: instanceToPlain(newField),
         message: 'Campo creado exitosamente.',
       });
     } catch (error) {
@@ -114,7 +135,7 @@ export class FieldController {
       const updatedField = await this.fieldService.update(id, fieldData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedField,
+        data: instanceToPlain(updatedField),
         message: 'Campo actualizado exitosamente.',
       });
     } catch (error) {
@@ -137,7 +158,7 @@ export class FieldController {
       const deletedField = await this.fieldService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedField,
+        data: instanceToPlain(deletedField),
         message: 'Campo eliminado exitosamente.',
         canRestore: true,
       });
@@ -161,7 +182,7 @@ export class FieldController {
       const restoredField = await this.fieldService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredField,
+        data: instanceToPlain(restoredField),
         message: 'Campo restaurado exitosamente.',
       });
     } catch (error) {
@@ -184,7 +205,7 @@ export class FieldController {
       const deletedField = await this.fieldService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedField,
+        data: instanceToPlain(deletedField),
         message: 'Campo eliminado permanentemente.',
         canRestore: false,
       });

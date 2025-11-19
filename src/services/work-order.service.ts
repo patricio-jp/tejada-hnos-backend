@@ -2,6 +2,7 @@ import { CreateWorkOrderDto, UpdateWorkOrderDto } from "@/dtos/work-order.dto";
 import { WorkOrder } from "@/entities/work-order.entity";
 import { Plot } from "@/entities/plot.entity";
 import { User } from "@/entities/user.entity";
+import { Activity } from "@/entities/activity.entity";
 import { HttpException } from "@/exceptions/HttpException";
 import { DataSource, Repository, In } from "typeorm";
 import { StatusCodes } from "http-status-codes";
@@ -12,8 +13,10 @@ export class WorkOrderService {
   private workOrderRepository: Repository<WorkOrder>;
   private plotRepository: Repository<Plot>;
   private userRepository: Repository<User>;
+  private dataSource: DataSource;
 
   constructor(dataSource: DataSource) {
+    this.dataSource = dataSource;
     this.workOrderRepository = dataSource.getRepository(WorkOrder);
     this.plotRepository = dataSource.getRepository(Plot);
     this.userRepository = dataSource.getRepository(User);
@@ -68,6 +71,8 @@ export class WorkOrderService {
       .createQueryBuilder('workOrder')
       .leftJoinAndSelect('workOrder.assignedTo', 'user')
       .leftJoinAndSelect('workOrder.plots', 'plots')
+      .leftJoinAndSelect('plots.field', 'field')
+      .leftJoinAndSelect('plots.variety', 'variety')
       .leftJoinAndSelect('workOrder.activities', 'activities');
 
     // Aplicar filtros dinámicamente
@@ -128,7 +133,15 @@ export class WorkOrderService {
   public async findById(id: string): Promise<WorkOrder> {
     const workOrder = await this.workOrderRepository.findOne({
       where: { id },
-      relations: ['assignedTo', 'plots', 'activities', 'activities.inputsUsed']
+      relations: [
+        'assignedTo', 
+        'plots',
+        'plots.field',
+        'plots.variety',
+        'activities', 
+        'activities.inputsUsed',
+        'activities.inputsUsed.input',
+      ]
     });
     
     if (!workOrder) {
@@ -208,7 +221,13 @@ export class WorkOrderService {
       throw new HttpException(StatusCodes.NOT_FOUND, "La orden de trabajo no fue encontrada.");
     }
 
-    return await this.workOrderRepository.remove(workOrder);
+    return await this.dataSource.transaction(async (manager) => {
+      // Eliminar actividades relacionadas primero
+      await manager.delete(Activity, { workOrderId: id });
+
+      // Eliminar la orden de trabajo
+      return await manager.remove(WorkOrder, workOrder);
+    });
   }
 
   /**

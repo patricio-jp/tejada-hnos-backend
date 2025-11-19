@@ -5,7 +5,8 @@ import { WorkOrderFilters } from '@/interfaces/filters.interface';
 import { CreateWorkOrderDto, UpdateWorkOrderDto } from '@dtos/work-order.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { DataSource } from 'typeorm';
-import { WorkOrderStatus } from '@/enums';
+import { WorkOrderStatus, UserRole } from '@/enums';
+import { instanceToPlain } from 'class-transformer';
 
 export class WorkOrderController {
   private workOrderService: WorkOrderService;
@@ -57,7 +58,7 @@ export class WorkOrderController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: workOrders,
+        data: instanceToPlain(workOrders),
         count: workOrders.length,
         message: 'Órdenes de trabajo obtenidas exitosamente.',
       });
@@ -81,7 +82,7 @@ export class WorkOrderController {
       const workOrder = await this.workOrderService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: workOrder,
+        data: instanceToPlain(workOrder),
         message: 'Orden de trabajo obtenida exitosamente.',
       });
     } catch (error) {
@@ -99,7 +100,7 @@ export class WorkOrderController {
       const newWorkOrder = await this.workOrderService.create(workOrderData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newWorkOrder,
+        data: instanceToPlain(newWorkOrder),
         message: 'Orden de trabajo creada exitosamente.',
       });
     } catch (error) {
@@ -110,6 +111,17 @@ export class WorkOrderController {
   /**
    * PUT /work-orders/:id
    * Actualizar una orden de trabajo por su ID
+   * 
+   * FLUJO DE ESTADOS:
+   * - PENDING: Asignada, no iniciada
+   * - IN_PROGRESS: Operario está trabajando
+   * - UNDER_REVIEW: Operario terminó, esperando aprobación de capataz
+   * - COMPLETED: Capataz revisó y aprobó
+   * - CANCELLED: Cancelada por capataz/admin
+   * 
+   * PERMISOS:
+   * - OPERARIO (asignado): Puede cambiar de PENDING → IN_PROGRESS → UNDER_REVIEW
+   * - CAPATAZ/ADMIN: Pueden cambiar a cualquier estado
    */
   public update = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -120,10 +132,109 @@ export class WorkOrderController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la orden de trabajo es requerido.');
       }
 
+      // Obtener la orden actual para validar permisos
+      const currentWorkOrder = await this.workOrderService.findById(id);
+
+      // OPERARIO: Solo puede actualizar si está asignado a él
+      if (req.user?.role === UserRole.OPERARIO) {
+        // Verificar que sea el operario asignado
+        if (currentWorkOrder.assignedToId !== req.user.userId) {
+          throw new HttpException(
+            StatusCodes.FORBIDDEN,
+            'Solo puedes actualizar órdenes de trabajo asignadas a ti.'
+          );
+        }
+
+        // Si intenta cambiar el status, validar transiciones permitidas
+        if (workOrderData.status !== undefined) {
+          const allowedTransitions: Record<string, WorkOrderStatus[]> = {
+            [WorkOrderStatus.PENDING]: [WorkOrderStatus.IN_PROGRESS],
+            [WorkOrderStatus.IN_PROGRESS]: [WorkOrderStatus.UNDER_REVIEW],
+            [WorkOrderStatus.UNDER_REVIEW]: [], // No puede cambiar desde aquí
+          };
+
+          const allowed = allowedTransitions[currentWorkOrder.status] || [];
+          
+          if (!allowed.includes(workOrderData.status)) {
+            throw new HttpException(
+              StatusCodes.FORBIDDEN,
+              `No puedes cambiar el estado de esta orden desde ${currentWorkOrder.status} a ${workOrderData.status}. ` +
+              `Transiciones permitidas: ${allowed.join(', ') || 'ninguna (espera aprobación del capataz)'}.`
+            );
+          }
+        }
+
+        // Operario no puede modificar otros campos (solo status en transiciones permitidas)
+        const allowedFields = ['status'];
+        // Filtrar solo campos que tienen valor (no undefined)
+        const attemptedFields = Object.keys(workOrderData).filter(
+          key => workOrderData[key as keyof UpdateWorkOrderDto] !== undefined
+        );
+        const invalidFields = attemptedFields.filter(field => !allowedFields.includes(field));
+        
+        if (invalidFields.length > 0) {
+          throw new HttpException(
+            StatusCodes.FORBIDDEN,
+            `Un operario solo puede actualizar el estado de la orden. Campos no permitidos: ${invalidFields.join(', ')}`
+          );
+        }
+      }
+
+      // CAPATAZ/ADMIN: Validaciones adicionales
+      if (req.user?.role === UserRole.CAPATAZ || req.user?.role === UserRole.ADMIN) {
+        // Si intenta cambiar el status, validar transiciones permitidas
+        if (workOrderData.status !== undefined && workOrderData.status !== currentWorkOrder.status) {
+          // Definir transiciones permitidas para CAPATAZ/ADMIN
+          const allowedTransitions: Record<string, WorkOrderStatus[]> = {
+            [WorkOrderStatus.PENDING]: [
+              WorkOrderStatus.IN_PROGRESS,
+              WorkOrderStatus.CANCELLED
+            ],
+            [WorkOrderStatus.IN_PROGRESS]: [
+              WorkOrderStatus.UNDER_REVIEW,
+              WorkOrderStatus.CANCELLED
+            ],
+            [WorkOrderStatus.UNDER_REVIEW]: [
+              WorkOrderStatus.IN_PROGRESS,  // Reapertura (para agregar actividades faltantes)
+              WorkOrderStatus.COMPLETED,    // Cierre (validado después)
+              WorkOrderStatus.CANCELLED
+            ],
+            [WorkOrderStatus.COMPLETED]: [],  // No se puede cambiar desde COMPLETED
+            [WorkOrderStatus.CANCELLED]: [],  // No se puede cambiar desde CANCELLED
+          };
+
+          const allowed = allowedTransitions[currentWorkOrder.status] || [];
+          
+          if (!allowed.includes(workOrderData.status)) {
+            throw new HttpException(
+              StatusCodes.BAD_REQUEST,
+              `No puedes cambiar el estado de la orden desde ${currentWorkOrder.status} a ${workOrderData.status}. ` +
+              `Transiciones permitidas: ${allowed.join(', ') || 'ninguna'}.`
+            );
+          }
+        }
+
+        // Validación adicional: al cerrar la orden, verificar que todas las actividades estén aprobadas/rechazadas
+        if (workOrderData.status === WorkOrderStatus.COMPLETED) {
+          const activities = currentWorkOrder.activities || [];
+          const pendingActivities = activities.filter(
+            activity => activity.status === 'PENDING'
+          );
+
+          if (pendingActivities.length > 0) {
+            throw new HttpException(
+              StatusCodes.BAD_REQUEST,
+              `No puedes cerrar la orden. Hay ${pendingActivities.length} actividad(es) pendiente(s) de aprobación o rechazo. ` +
+              'Todas las actividades deben estar aprobadas o rechazadas antes de cerrar la orden.'
+            );
+          }
+        }
+      }
+
       const updatedWorkOrder = await this.workOrderService.update(id, workOrderData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedWorkOrder,
+        data: instanceToPlain(updatedWorkOrder),
         message: 'Orden de trabajo actualizada exitosamente.',
       });
     } catch (error) {
@@ -146,7 +257,7 @@ export class WorkOrderController {
       const deletedWorkOrder = await this.workOrderService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedWorkOrder,
+        data: instanceToPlain(deletedWorkOrder),
         message: 'Orden de trabajo eliminada exitosamente.',
         canRestore: true,
       });
@@ -170,7 +281,7 @@ export class WorkOrderController {
       const restoredWorkOrder = await this.workOrderService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredWorkOrder,
+        data: instanceToPlain(restoredWorkOrder),
         message: 'Orden de trabajo restaurada exitosamente.',
       });
     } catch (error) {
@@ -193,7 +304,7 @@ export class WorkOrderController {
       const deletedWorkOrder = await this.workOrderService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedWorkOrder,
+        data: instanceToPlain(deletedWorkOrder),
         message: 'Orden de trabajo eliminada permanentemente.',
         canRestore: false,
       });

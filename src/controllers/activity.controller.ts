@@ -5,7 +5,8 @@ import { HttpException } from "@/exceptions/HttpException";
 import { StatusCodes } from "http-status-codes";
 import { CreateActivityDto, UpdateActivityDto } from "@/dtos/activity.dto";
 import { ActivityFilters } from "@/interfaces/filters.interface";
-import { ActivityType, ActivityStatus, UserRole } from "@/enums";
+import { ActivityType, ActivityStatus, UserRole, WorkOrderStatus } from "@/enums";
+import { instanceToPlain } from "class-transformer";
 
 export class ActivityController {
   private activityService: ActivityService;
@@ -50,11 +51,9 @@ export class ActivityController {
       if (req.managedFieldIds && req.managedFieldIds.length > 0) {
         filters.managedFieldIds = req.managedFieldIds;
         
-        // Si NO hay filtro de assignedToId en query, incluir al CAPATAZ también
-        // Si HAY filtro de assignedToId, respetarlo (para que el CAPATAZ pueda supervisar a otros)
-        if (!req.query.assignedToId && req.user?.userId) {
-          filters.assignedToId = req.user.userId;
-        }
+        // NO agregar assignedToId automáticamente para CAPATAZ con campos
+        // El OR en el servicio ya maneja mostrar OTs en sus campos gestionados
+        // Si el usuario filtra explícitamente por assignedToId, respetar ese filtro (ya está en filters.assignedToId de arriba)
       }
 
       const activities = await this.activityService.findAll(
@@ -62,7 +61,7 @@ export class ActivityController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: activities,
+        data: instanceToPlain(activities),
         count: activities.length,
         message: 'Actividades obtenidas exitosamente.',
       });
@@ -86,7 +85,7 @@ export class ActivityController {
       const activity = await this.activityService.findById(id);
 
       res.status(StatusCodes.OK).json({
-        data: activity,
+        data: instanceToPlain(activity),
         message: 'Actividad obtenida exitosamente.',
       });
     } catch (error) {
@@ -96,7 +95,16 @@ export class ActivityController {
 
   /**
    * POST /work-orders/:workOrderId/activities
-   * Crear una nueva actividad
+   * Crear una nueva actividad (registro de trabajo realizado)
+   * 
+   * FLUJO:
+   * - Solo se puede crear si WorkOrder está IN_PROGRESS
+   * - Si WorkOrder está UNDER_REVIEW → BLOQUEADO (nadie puede crear)
+   * - Para agregar actividad faltante: devolver WorkOrder a IN_PROGRESS
+   * 
+   * ROLES:
+   * - OPERARIO: Crea como PENDING (solo en órdenes asignadas)
+   * - CAPATAZ/ADMIN: Pueden crear como APPROVED
    */
   public create = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -106,21 +114,46 @@ export class ActivityController {
     
       const activityData: CreateActivityDto = req.body;
       
-      // Establecer status según el rol del usuario
-      // OPERARIO: siempre PENDING (requiere aprobación)
-      // CAPATAZ/ADMIN: pueden crear directamente como APPROVED o especificar el status
+      // Obtener la WorkOrder para verificar su estado (VALIDACIÓN UNIVERSAL)
+      const workOrder = await this.activityService.getWorkOrderById(workOrderId);
+      
+      // REGLA UNIVERSAL: Nadie puede crear actividades si WorkOrder no está IN_PROGRESS
+      if (workOrder.status !== WorkOrderStatus.IN_PROGRESS) {
+        throw new HttpException(
+          StatusCodes.FORBIDDEN,
+          `No se pueden crear actividades en una orden con estado ${workOrder.status}. ` +
+          'Solo se pueden agregar actividades mientras la orden está en progreso (IN_PROGRESS). ' +
+          (workOrder.status === WorkOrderStatus.UNDER_REVIEW 
+            ? 'Si falta una actividad, devuelve la orden a IN_PROGRESS primero.'
+            : '')
+        );
+      }
+      
+      // OPERARIO: Validaciones adicionales
       if (req.user?.role === UserRole.OPERARIO) {
-        activityData.status = ActivityStatus.PENDING; // Forzar PENDING para operarios
-      } else if (!activityData.status) {
-        // Si CAPATAZ/ADMIN no especifica status, usar APPROVED por defecto
-        activityData.status = ActivityStatus.APPROVED;
+        // Verificar que sea el operario asignado
+        if (workOrder.assignedToId !== req.user.userId) {
+          throw new HttpException(
+            StatusCodes.FORBIDDEN,
+            'Solo puedes registrar actividades en órdenes asignadas a ti.'
+          );
+        }
+
+        // Forzar PENDING para operarios
+        activityData.status = ActivityStatus.PENDING;
+      } else {
+        // CAPATAZ/ADMIN: pueden crear directamente como APPROVED
+        if (!activityData.status) {
+          // Si no especifica status, usar APPROVED por defecto
+          activityData.status = ActivityStatus.APPROVED;
+        }
       }
       
       const newActivity = await this.activityService.create(activityData);
 
       res.status(StatusCodes.CREATED).json({
-        data: newActivity,
-        message: 'Actividad creada exitosamente.',
+        data: instanceToPlain(newActivity),
+        message: 'Actividad registrada exitosamente.',
       });
     } catch (error) {
       next(error);
@@ -131,16 +164,26 @@ export class ActivityController {
    * PUT /activities/:id
    * Actualizar una actividad por su ID
    * 
-   * FLUJO DE ESTADOS PARA OPERARIO:
-   * 1. Crea actividad → Status: PENDING (automático)
-   * 2. CAPATAZ aprueba → Status: APPROVED
-   * 3. OPERARIO modifica → Status: PENDING (requiere nueva aprobación)
+   * FLUJO DE ESTADOS Y CONTROL DE STOCK:
+   * 1. Operario registra actividad → PENDING (stock NO descontado)
+   * 2. Mientras WorkOrder está IN_PROGRESS: se puede editar libremente
+   * 3. Cuando WorkOrder pasa a UNDER_REVIEW: CONGELADO (nadie puede editar)
+   * 4. Capataz puede aprobar/rechazar sin necesidad de editar
+   * 5. Si está APPROVED/REJECTED → INMUTABLE (integridad del historial)
    * 
-   * REGLAS:
-   * - OPERARIO no puede modificar actividades PENDING (debe esperar aprobación)
-   * - OPERARIO puede modificar actividades APPROVED/REJECTED (vuelven a PENDING)
-   * - OPERARIO no puede cambiar el status manualmente
-   * - CAPATAZ/ADMIN pueden modificar cualquier actividad y cambiar su status
+   * REGLAS DE MODIFICACIÓN:
+   * - NADIE puede editar actividades si WorkOrder está en UNDER_REVIEW o COMPLETED
+   * - Para editar: devolver WorkOrder a IN_PROGRESS primero
+   * 
+   * - OPERARIO (solo si WorkOrder = IN_PROGRESS): 
+   *   - Puede editar actividades PENDING (datos, inputs, horas)
+   *   - NO puede cambiar status a APPROVED/REJECTED
+   * 
+   * - CAPATAZ/ADMIN (solo si WorkOrder = IN_PROGRESS):
+   *   - Pueden editar actividades PENDING
+   *   - Pueden aprobar/rechazar EN CUALQUIER MOMENTO (incluso si WorkOrder = UNDER_REVIEW)
+   * 
+   * - TODOS: APPROVED y REJECTED son INMUTABLES siempre
    */
   public update = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -151,36 +194,73 @@ export class ActivityController {
         throw new HttpException(StatusCodes.BAD_REQUEST, 'El ID de la actividad es requerido.');
       }
 
-      // Obtener la actividad actual para validar su estado
+      // Obtener la actividad para verificar su estado actual
       const currentActivity = await this.activityService.findById(id);
 
-      // OPERARIO: validaciones especiales
+      // REGLA UNIVERSAL: Las actividades APPROVED o REJECTED son INMUTABLES
+      // Garantiza integridad del historial y trazabilidad de stock/horas
+      if (currentActivity.status === ActivityStatus.APPROVED || currentActivity.status === ActivityStatus.REJECTED) {
+        throw new HttpException(
+          StatusCodes.FORBIDDEN,
+          `No puedes modificar una actividad ${currentActivity.status === ActivityStatus.APPROVED ? 'aprobada' : 'rechazada'}. ` +
+          'Debes crear una nueva actividad para registrar correcciones. ' +
+          'Esto garantiza la integridad del historial y la trazabilidad de las operaciones.'
+        );
+      }
+
+      // Verificar el estado de la WorkOrder
+      const workOrder = currentActivity.workOrder;
+
+      // Limpiar campos undefined de activityData
+      Object.keys(activityData).forEach(key => {
+        if (activityData[key as keyof UpdateActivityDto] === undefined) {
+          delete activityData[key as keyof UpdateActivityDto];
+        }
+      });
+      
+      // Si solo está cambiando status a APPROVED/REJECTED (aprobación/rechazo)
+      const isApprovalAction = activityData.status !== undefined && 
+                               (activityData.status === ActivityStatus.APPROVED || 
+                                activityData.status === ActivityStatus.REJECTED) &&
+                               Object.keys(activityData).length === 1; // Solo cambia status
+
+      // CAPATAZ/ADMIN pueden aprobar/rechazar en cualquier momento
+      if (isApprovalAction && (req.user?.role === UserRole.CAPATAZ || req.user?.role === UserRole.ADMIN)) {
+        // Permitir aprobación/rechazo sin importar estado de WorkOrder
+        const updatedActivity = await this.activityService.update(id, activityData);
+        return res.status(StatusCodes.OK).json({
+          data: instanceToPlain(updatedActivity),
+          message: 'Actividad actualizada exitosamente.',
+        });
+      }
+
+      // REGLA UNIVERSAL: No se puede editar contenido si WorkOrder no está IN_PROGRESS
+      if (workOrder.status !== WorkOrderStatus.IN_PROGRESS) {
+        throw new HttpException(
+          StatusCodes.FORBIDDEN,
+          `No puedes modificar actividades de una orden con estado ${workOrder.status}. ` +
+          'Solo se pueden editar actividades mientras la orden está en progreso (IN_PROGRESS). ' +
+          (workOrder.status === WorkOrderStatus.UNDER_REVIEW 
+            ? 'Si necesitas corregir algo, devuelve la orden a IN_PROGRESS primero.'
+            : '')
+        );
+      }
+
+      // OPERARIO: Validaciones adicionales
       if (req.user?.role === UserRole.OPERARIO) {
-        // 1. No puede cambiar el status (solo CAPATAZ/ADMIN pueden aprobar/rechazar)
-        if (activityData.status !== undefined) {
+        // No puede cambiar el status a APPROVED o REJECTED
+        if (activityData.status !== undefined && activityData.status !== ActivityStatus.PENDING) {
           throw new HttpException(
             StatusCodes.FORBIDDEN,
-            'Un operario no puede cambiar el estado de una actividad. Solo un capataz o administrador puede aprobar o rechazar actividades.'
+            'Un operario no puede aprobar o rechazar actividades. Solo un capataz o administrador puede hacerlo.'
           );
         }
-
-        // 2. No puede modificar una actividad que está PENDING
-        if (currentActivity.status === ActivityStatus.PENDING) {
-          throw new HttpException(
-            StatusCodes.FORBIDDEN,
-            'No puedes modificar una actividad que está pendiente de aprobación. Espera a que un capataz o administrador la apruebe.'
-          );
-        }
-
-        // 3. Si la actividad está APPROVED o REJECTED, al modificarla vuelve a PENDING
-        // (para que un capataz revise los cambios)
-        activityData.status = ActivityStatus.PENDING;
       }
 
       const updatedActivity = await this.activityService.update(id, activityData);
 
       res.status(StatusCodes.OK).json({
-        data: updatedActivity,
+        data: instanceToPlain(updatedActivity),
         message: 'Actividad actualizada exitosamente.',
       });
     } catch (error) {
@@ -203,7 +283,7 @@ export class ActivityController {
       const deletedActivity = await this.activityService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedActivity,
+        data: instanceToPlain(deletedActivity),
         message: 'Actividad eliminada exitosamente.',
         canRestore: true,
       });
@@ -227,7 +307,7 @@ export class ActivityController {
       const restoredActivity = await this.activityService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: restoredActivity,
+        data: instanceToPlain(restoredActivity),
         message: 'Actividad restaurada exitosamente.',
       });
     } catch (error) {
@@ -250,7 +330,7 @@ export class ActivityController {
       const deletedActivity = await this.activityService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedActivity,
+        data: instanceToPlain(deletedActivity),
         message: 'Actividad eliminada permanentemente.',
         canRestore: false,
       });

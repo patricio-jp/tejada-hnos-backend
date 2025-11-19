@@ -6,6 +6,8 @@ import { HttpException } from '@/exceptions/HttpException';
 import { isValidUUID } from '@/utils/validation.utils';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, UpdatePurchaseOrderStatusDto } from '@dtos/purchase-order.dto';
 import { DataSource } from 'typeorm';
+import { instanceToPlain } from 'class-transformer';
+import { PurchaseOrderStatus } from '@/enums';
 
 export class PurchaseOrderController {
   private purchaseOrderService: PurchaseOrderService;
@@ -110,7 +112,7 @@ export class PurchaseOrderController {
       const purchaseOrder = await this.purchaseOrderService.create(data);
 
       res.status(StatusCodes.CREATED).json({
-        data: purchaseOrder,
+        data: instanceToPlain(purchaseOrder),
         message: 'Orden de compra creada exitosamente',
       });
     } catch (error) {
@@ -139,7 +141,7 @@ export class PurchaseOrderController {
       const purchaseOrder = await this.purchaseOrderService.update(id, data);
 
       res.status(StatusCodes.OK).json({
-        data: purchaseOrder,
+        data: instanceToPlain(purchaseOrder),
         message: 'Orden de compra actualizada exitosamente',
       });
     } catch (error) {
@@ -165,6 +167,44 @@ export class PurchaseOrderController {
       }
 
       const data: UpdatePurchaseOrderStatusDto = req.body;
+
+      // Obtener la orden actual para validar transiciones de estado
+      const currentOrder = await this.purchaseOrderService.findById(id);
+
+      // Validar transiciones de estado permitidas
+      if (data.status !== currentOrder.status) {
+        const allowedTransitions: Record<string, PurchaseOrderStatus[]> = {
+          [PurchaseOrderStatus.PENDIENTE]: [
+            PurchaseOrderStatus.APROBADA,
+            PurchaseOrderStatus.CANCELADA,
+          ],
+          [PurchaseOrderStatus.APROBADA]: [
+            PurchaseOrderStatus.RECIBIDA_PARCIAL,
+            PurchaseOrderStatus.RECIBIDA,
+            PurchaseOrderStatus.CANCELADA,
+          ],
+          [PurchaseOrderStatus.RECIBIDA_PARCIAL]: [
+            PurchaseOrderStatus.RECIBIDA,
+            PurchaseOrderStatus.CERRADA,
+          ],
+          [PurchaseOrderStatus.RECIBIDA]: [
+            PurchaseOrderStatus.CERRADA,
+          ],
+          [PurchaseOrderStatus.CERRADA]: [],
+          [PurchaseOrderStatus.CANCELADA]: [],
+        };
+
+        const allowed = allowedTransitions[currentOrder.status] || [];
+        
+        if (!allowed.includes(data.status)) {
+          throw new HttpException(
+            StatusCodes.BAD_REQUEST,
+            `No se puede cambiar el estado de la orden de compra de '${currentOrder.status}' a '${data.status}'. ` +
+            `Transiciones permitidas desde '${currentOrder.status}': ${allowed.length > 0 ? allowed.join(', ') : 'ninguna (estado final)'}`
+          );
+        }
+      }
+
       const purchaseOrder = await this.purchaseOrderService.updateStatus(
         id, 
         data.status, 
@@ -172,7 +212,7 @@ export class PurchaseOrderController {
       );
 
       res.status(StatusCodes.OK).json({
-        data: purchaseOrder,
+        data: instanceToPlain(purchaseOrder),
         message: `Estado de la orden de compra actualizado a ${data.status}`,
       });
     } catch (error) {
@@ -199,7 +239,7 @@ export class PurchaseOrderController {
       const receipts = await this.goodsReceiptService.findByPurchaseOrder(id);
 
       res.status(StatusCodes.OK).json({
-        data: receipts,
+        data: instanceToPlain(receipts),
         count: receipts.length,
         message: 'Recepciones de la orden obtenidas exitosamente',
       });
@@ -207,11 +247,6 @@ export class PurchaseOrderController {
       next(error);
     }
   };
-
-  /**
-   * DELETE /purchase-orders/:id
-   * Eliminar una orden de compra (soft delete)
-   */
 
   /**
    * DELETE /purchase-orders/:id
@@ -232,7 +267,7 @@ export class PurchaseOrderController {
       const purchaseOrder = await this.purchaseOrderService.delete(id);
 
       res.status(StatusCodes.OK).json({
-        data: purchaseOrder,
+        data: instanceToPlain(purchaseOrder),
         message: 'Orden de compra eliminada exitosamente',
         canRestore: true,
       });
@@ -260,7 +295,7 @@ export class PurchaseOrderController {
       const purchaseOrder = await this.purchaseOrderService.restore(id);
 
       res.status(StatusCodes.OK).json({
-        data: purchaseOrder,
+        data: instanceToPlain(purchaseOrder),
         message: 'Orden de compra restaurada exitosamente',
       });
     } catch (error) {
@@ -287,7 +322,7 @@ export class PurchaseOrderController {
       const deletedPurchaseOrder = await this.purchaseOrderService.hardDelete(id);
 
       res.status(StatusCodes.OK).json({
-        data: deletedPurchaseOrder,
+        data: instanceToPlain(deletedPurchaseOrder),
         message: 'Orden de compra eliminada permanentemente',
         canRestore: false,
       });

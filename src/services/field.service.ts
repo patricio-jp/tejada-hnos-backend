@@ -119,21 +119,22 @@ export class FieldService {
           minArea: filters.minArea
         });
       }
+
       if (filters.withDeleted) {
-      queryBuilder.withDeleted(); 
-    }
+        queryBuilder.withDeleted(); 
+      }
   
       if (filters.maxArea) {
         queryBuilder.andWhere('field.area <= :maxArea', {
           maxArea: filters.maxArea
         });
       }
-      
 
-    if (filters.maxArea) {
-      queryBuilder.andWhere('field.area <= :maxArea', {
-        maxArea: filters.maxArea
-      });
+      if (filters.maxArea) {
+        queryBuilder.andWhere('field.area <= :maxArea', {
+          maxArea: filters.maxArea
+        });
+      }
     }
 
     queryBuilder.orderBy('field.createdAt', 'DESC');

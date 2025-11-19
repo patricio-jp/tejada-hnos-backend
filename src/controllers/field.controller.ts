@@ -42,6 +42,19 @@ export class FieldController {
         filters.maxArea = parseFloat(req.query.maxArea as string);
       }
 
+      // <--- AGREGADO: Leer el parámetro y convertirlo a booleano
+      if (req.query.withDeleted === 'true') {
+        filters.withDeleted = true;
+      }
+
+      // Agregar managedFieldIds desde el middleware de autorización (para CAPATAZ)
+      if (req.managedFieldIds && req.managedFieldIds.length > 0) {
+        filters.managedFieldIds = req.managedFieldIds;
+      }
+        
+      const fields = await this.fieldService.findAll(
+        Object.keys(filters).length > 0 ? filters : undefined
+      );
       // Agregar managedFieldIds desde el middleware (para proyección diferenciada en CAPATAZ)
       // Esto permite que el servicio sepa qué campos gestiona el CAPATAZ
       // Incluso sin filtros, el servicio necesita esta info para decidir qué datos mostrar

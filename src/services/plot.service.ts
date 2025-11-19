@@ -70,7 +70,9 @@ export class PlotService {
 
     const plot = this.plotRepository.create(plotData);
 
-    return await this.plotRepository.save(plot);
+    const savedPlot = await this.plotRepository.save(plot);
+
+    return await this.getPlotById(savedPlot.id);
   }
 
   /**

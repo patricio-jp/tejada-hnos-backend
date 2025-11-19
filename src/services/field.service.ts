@@ -107,23 +107,34 @@ export class FieldService {
       .leftJoinAndSelect('field.manager', 'manager')
       .leftJoinAndSelect('field.plots', 'plots');
 
-    // Aplicar filtros
-    if (filters.managerId) {
-      queryBuilder.andWhere('field.managerId = :managerId', {
-        managerId: filters.managerId
-      });
-    }
+    if (filters) {
+      if (filters.managerId) {
+        queryBuilder.andWhere('field.managerId = :managerId', {
+          managerId: filters.managerId
+        });
+      }
 
-    if (filters.minArea) {
-      queryBuilder.andWhere('field.area >= :minArea', {
-        minArea: filters.minArea
-      });
-    }
+      if (filters.minArea) {
+        queryBuilder.andWhere('field.area >= :minArea', {
+          minArea: filters.minArea
+        });
+      }
 
-    if (filters.maxArea) {
-      queryBuilder.andWhere('field.area <= :maxArea', {
-        maxArea: filters.maxArea
-      });
+      if (filters.withDeleted) {
+        queryBuilder.withDeleted(); 
+      }
+  
+      if (filters.maxArea) {
+        queryBuilder.andWhere('field.area <= :maxArea', {
+          maxArea: filters.maxArea
+        });
+      }
+
+      if (filters.maxArea) {
+        queryBuilder.andWhere('field.area <= :maxArea', {
+          maxArea: filters.maxArea
+        });
+      }
     }
 
     queryBuilder.orderBy('field.createdAt', 'DESC');
@@ -240,7 +251,8 @@ export class FieldService {
       throw new HttpException(StatusCodes.NOT_FOUND, "El campo no fue encontrado.");
     }
 
-    return await this.fieldRepository.recover(field);
+   await this.fieldRepository.recover(field);
+  return await this.findById(fieldId);
   }
 
   /**

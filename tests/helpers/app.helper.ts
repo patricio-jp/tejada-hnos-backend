@@ -17,6 +17,8 @@ import { createVarietyRoutes } from '@/routes/variety.routes';
 import { createPurchaseOrderRoutes } from '@/routes/purchase-order.routes';
 import { createInputRoutes } from '@/routes/input.routes';
 import { createGoodsReceiptRoutes } from '@/routes/goods-receipt.routes';
+import { createSalesOrderRoutes } from '../../src/routes/sale-order.routes';
+import { createShipmentRoutes } from '../../src/routes/shipment.routes';
 
 /**
  * Creates and configures an Express application for testing
@@ -45,6 +47,8 @@ export const createTestApp = (dataSource: DataSource): Express => {
   app.use('/purchase-orders', createPurchaseOrderRoutes(dataSource));
   app.use('/inputs', createInputRoutes(dataSource));
   app.use('/goods-receipts', createGoodsReceiptRoutes(dataSource));
+  app.use('/sales-orders', createSalesOrderRoutes(dataSource));
+  app.use('/shipments', createShipmentRoutes(dataSource));
 
   // Configure Error Handler
   app.use(errorHandler);

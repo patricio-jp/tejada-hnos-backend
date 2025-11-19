@@ -200,6 +200,7 @@ describe('E2E: Fields and Plots Flow', () => {
       });
 
       // Act: Get all fields for Capataz A (no filters → map data only)
+      // Act 2: Get all fields for Capataz A (returns both managed and unmanaged fields with appropriate detail levels)
       const responseA_All = await request(app)
         .get('/fields')
         .set('Authorization', `Bearer ${capataz.token}`);
@@ -213,6 +214,22 @@ describe('E2E: Fields and Plots Flow', () => {
       expect(fieldIdsA_All).toContain(fieldB1.id);
       expect(fieldIdsA_All).toContain(fieldUnmanaged.id);
       expect(responseA_All.body.data[0]).not.toHaveProperty('area'); // Map data only
+
+      // Assert: Capataz A sees unmanaged fields with map data only
+      const unmanagedsFieldA = responseA_All.body.data.map((f: any) => f.id).filter((f: string) => fieldUnmanaged.id === f || f === fieldB1.id);
+      expect(unmanagedsFieldA).toHaveLength(2);
+      unmanagedsFieldA.forEach((fieldId: string) => {
+        const fieldData = responseA_All.body.data.find((f: any) => f.id === fieldId);
+        expect(fieldData).not.toHaveProperty('area'); // Map data only
+      });
+
+      // Assert: Capataz A sees managed fields with full details
+      const managedFieldsA = responseA_All.body.data.map((f: any) => f.id).filter((f: string) => f === fieldA1.id || f === fieldA2.id);
+      expect(managedFieldsA).toHaveLength(2);
+      managedFieldsA.forEach((fieldId: string) => {
+        const fieldData = responseA_All.body.data.find((f: any) => f.id === fieldId);
+        expect(fieldData).toHaveProperty('area'); // Full details
+      });
 
       // Act: Get managed fields for Capataz A (with filter → full details)
       const responseA_Managed = await request(app)

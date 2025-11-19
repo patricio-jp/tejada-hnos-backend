@@ -7,7 +7,11 @@ import { Variety } from '@/entities/variety.entity';
 import { User } from '@/entities/user.entity';
 import { Input } from '@/entities/input.entity';
 import { InputUsage } from '@/entities/input-usage.entity';
-import { WorkOrderStatus, ActivityType, ActivityStatus, InputUnit } from '@/enums';
+import { Customer } from '@/entities/customer.entity';
+import { HarvestLot } from '@/entities/harvest-lot.entity';
+import { SalesOrder } from '@/entities/sale-order.entity';
+import { Shipment } from '@/entities/shipment.entity';
+import { WorkOrderStatus, ActivityType, ActivityStatus, InputUnit, HarvestLotStatus, WalnutCaliber, SalesOrderStatus } from '@/enums';
 import { GeoJSONPolygon } from '@/types';
 
 /**
@@ -321,6 +325,231 @@ export const setupWorkOrderScenario = async (
     unassignedWorkOrder,
     pendingActivity,
     approvedActivity,
+  };
+};
+
+/**
+ * Creates a test customer
+ */
+export const createTestCustomer = async (
+  dataSource: DataSource,
+  data: {
+    name: string;
+    taxId?: string;
+    address?: string;
+    contactEmail?: string;
+    phoneNumber?: string;
+  }
+): Promise<Customer> => {
+  const customerRepository = dataSource.getRepository(Customer);
+  
+  const customer = customerRepository.create({
+    name: data.name,
+    taxId: data.taxId || null,
+    address: data.address || null,
+    contactEmail: data.contactEmail || null,
+    phoneNumber: data.phoneNumber || null,
+  } as Partial<Customer>);
+
+  return await customerRepository.save(customer);
+};
+
+/**
+ * Creates a test harvest lot
+ */
+export const createTestHarvestLot = async (
+  dataSource: DataSource,
+  data: {
+    plotId: string;
+    harvestDate: Date;
+    lotCode?: string;
+    varietyName?: string;
+    caliber?: WalnutCaliber;
+    grossWeightKg: number;
+    netWeightKg?: number;
+    status?: HarvestLotStatus;
+  }
+): Promise<HarvestLot> => {
+  const harvestLotRepository = dataSource.getRepository(HarvestLot);
+  
+  const harvestLot = harvestLotRepository.create({
+    plotId: data.plotId,
+    harvestDate: data.harvestDate,
+    lotCode: data.lotCode || `LOT-${Date.now()}`,
+    varietyName: data.varietyName || 'Nuez Sin Clasificar',
+    caliber: data.caliber || null,
+    grossWeightKg: data.grossWeightKg,
+    netWeightKg: data.netWeightKg || null,
+    remainingNetWeightKg: data.netWeightKg || null,
+    status: data.status || HarvestLotStatus.PENDIENTE_PROCESO,
+  } as Partial<HarvestLot>);
+
+  return await harvestLotRepository.save(harvestLot);
+};
+
+/**
+ * Creates a test sales order with details
+ */
+export const createTestSalesOrder = async (
+  dataSource: DataSource,
+  data: {
+    customerId: string;
+    status?: SalesOrderStatus;
+    details: Array<{
+      caliber: string;
+      variety: string;
+      quantityKg: number;
+      unitPrice: number;
+    }>;
+  }
+): Promise<SalesOrder> => {
+  const salesOrderRepository = dataSource.getRepository(SalesOrder);
+  
+  // First, create and save the sales order WITHOUT details
+  const salesOrder = salesOrderRepository.create({
+    customerId: data.customerId,
+    status: data.status || SalesOrderStatus.PENDIENTE,
+  } as Partial<SalesOrder>);
+
+  const savedOrder = await salesOrderRepository.save(salesOrder);
+
+  // Calculate total amount
+  const totalAmount = data.details.reduce((sum, detail) => {
+    return sum + (detail.quantityKg * detail.unitPrice);
+  }, 0);
+
+  // Now insert the details using query builder
+  if (data.details && data.details.length > 0) {
+    await dataSource
+      .createQueryBuilder()
+      .insert()
+      .into('sales_order_details')
+      .values(
+        data.details.map(detail => ({
+          salesOrderId: savedOrder.id,
+          caliber: detail.caliber,
+          variety: detail.variety,
+          quantityKg: detail.quantityKg,
+          unitPrice: detail.unitPrice,
+          quantityShipped: 0,
+          status: 'PENDIENTE',
+        }))
+      )
+      .execute();
+  }
+
+  // Update the total amount
+  await salesOrderRepository.update(savedOrder.id, { totalAmount });
+
+  // Reload the order with details
+  const orderWithDetails = await salesOrderRepository.findOne({
+    where: { id: savedOrder.id },
+    relations: ['details', 'customer'],
+  });
+
+  return orderWithDetails!;
+};
+
+/**
+ * Sets up a complete harvest scenario for testing
+ */
+export const setupHarvestScenario = async (
+  dataSource: DataSource,
+  capatazId: string
+) => {
+  // Create field and plot
+  const field = await createTestField(dataSource, {
+    name: 'Campo Nogales',
+    area: 100,
+    address: 'Ruta Nogales 123',
+    managerId: capatazId,
+  });
+
+  const variety = await createTestVariety(dataSource, {
+    name: 'Serr',
+    description: 'Variedad de nogal Serr',
+  });
+
+  const plot = await createTestPlot(dataSource, {
+    name: 'Parcela Nogales 1',
+    area: 25,
+    fieldId: field.id,
+    varietyId: variety.id,
+  });
+
+  // Create harvest lots in different states
+  const pendingLot = await createTestHarvestLot(dataSource, {
+    plotId: plot.id,
+    harvestDate: new Date('2025-03-15'),
+    lotCode: 'LOT-001-PENDING',
+    varietyName: 'Serr',
+    grossWeightKg: 1000,
+    status: HarvestLotStatus.PENDIENTE_PROCESO,
+  });
+
+  const inStockLot = await createTestHarvestLot(dataSource, {
+    plotId: plot.id,
+    harvestDate: new Date('2025-03-10'),
+    lotCode: 'LOT-002-STOCK',
+    varietyName: 'Serr',
+    caliber: WalnutCaliber.JUMBO,
+    grossWeightKg: 2000,
+    netWeightKg: 1600,
+    status: HarvestLotStatus.EN_STOCK,
+  });
+
+  return {
+    field,
+    variety,
+    plot,
+    pendingLot,
+    inStockLot,
+  };
+};
+
+/**
+ * Sets up a complete sales scenario for testing
+ */
+export const setupSalesScenario = async (
+  dataSource: DataSource,
+  capatazId: string
+) => {
+  // Create harvest data
+  const harvestScenario = await setupHarvestScenario(dataSource, capatazId);
+
+  // Create customer
+  const customer = await createTestCustomer(dataSource, {
+    name: 'Cliente Test S.A.',
+    taxId: '76543210-K',
+    address: 'Av. Principal 456',
+    contactEmail: 'contacto@clientetest.cl',
+    phoneNumber: '+56912345678',
+  });
+
+  // Create sales order
+  const salesOrder = await createTestSalesOrder(dataSource, {
+    customerId: customer.id,
+    status: SalesOrderStatus.PENDIENTE,
+    details: [
+      {
+        caliber: WalnutCaliber.JUMBO,
+        variety: 'Serr',
+        quantityKg: 500,
+        unitPrice: 15.50,
+      },
+      {
+        caliber: WalnutCaliber.LARGE,
+        variety: 'Serr',
+        quantityKg: 300,
+        unitPrice: 12.75,
+      },
+    ],
+  });
+
+  return {
+    ...harvestScenario,
+    customer,
+    salesOrder,
   };
 };
 

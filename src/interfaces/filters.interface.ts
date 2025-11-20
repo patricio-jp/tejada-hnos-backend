@@ -44,7 +44,7 @@ export interface PlotFilters {
   minArea?: number;
   maxArea?: number;
   managedFieldIds?: string[]; // Para filtrar por campos gestionados (CAPATAZ)
-withDeleted?: boolean; // Soporte para soft delete
+  withDeleted?: boolean; // Soporte para soft delete
 }
 
 /**

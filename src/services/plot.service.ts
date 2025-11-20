@@ -53,8 +53,8 @@ export class PlotService {
 
     const queryBuilder = this.plotRepository.createQueryBuilder('plot');
 
-    // <--- AGREGADO: Habilitar soft-delete si el filtro lo pide
-    if ((filters as any).withDeleted) {
+    
+    if (filters.withDeleted) {
       queryBuilder.withDeleted();
     }
 

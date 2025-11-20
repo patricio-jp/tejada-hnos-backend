@@ -39,10 +39,8 @@ export class PlotController {
         filters.maxArea = parseFloat(req.query.maxArea as string);
       }
 
-      // <--- AGREGADO: Soporte para ver eliminados (parche con as any)
       if (req.query.withDeleted === 'true') {
-        // Usamos as any por si la interfaz PlotFilters no tiene la propiedad tipada aun
-        (filters as any).withDeleted = true;
+        filters.withDeleted = true;
       }
 
       // Agregar managedFieldIds desde el middleware de autorización (para CAPATAZ)
@@ -71,10 +69,6 @@ export class PlotController {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // OTROS MÉTODOS (Sin cambios)
-  // -------------------------------------------------------------------------
-  
   public getPlotById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;

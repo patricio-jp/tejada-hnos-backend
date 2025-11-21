@@ -1,5 +1,5 @@
 import { DataSource } from "typeorm";
-import { PostgreSQLDataSource } from "@config/typeorm.config";
+import { createAndInitializeDataSource } from "@config/typeorm.config";
 
 export class DatabaseService {
   private static dataSource: DataSource;
@@ -10,7 +10,7 @@ export class DatabaseService {
    */
   static async initialize(): Promise<DataSource> {
     try {
-      this.dataSource = await PostgreSQLDataSource.initialize();
+      this.dataSource = await createAndInitializeDataSource();
       console.log("🌿 Database connection established successfully.");
       return this.dataSource;
     } catch (error) {

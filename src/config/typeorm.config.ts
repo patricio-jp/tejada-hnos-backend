@@ -31,12 +31,14 @@ function sanitizeConnectionUrl(raw: string): string {
     }
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+
 // Construcción por defecto de opciones (sin inicializar)
 const baseOptions: DataSourceOptions = {
     type: 'postgres',
-    entities: ["src/entities/*.ts"],
-    synchronize: true, // Set to false in production
-    logging: true,
+    entities: isProd ? ["dist/entities/*.js"] : ["src/entities/*.ts"],
+    synchronize: !isProd, // Set to false in production
+    logging: !isProd,
     extra: {
         timezone: 'UTC',
     },

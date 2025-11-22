@@ -1,6 +1,8 @@
 import "reflect-metadata";
 import express from "express";
 import cors from "cors";
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { ENV } from "@config/environment";
 import { DatabaseService } from "@services/database.service";
 import { errorHandler } from "@middlewares/error-handler.middleware";
@@ -32,8 +34,19 @@ const startServer = async () => {
     const dataSource = await DatabaseService.initialize();
     const app = express();
 
+    const isProd = ENV.NODE_ENV === 'production';
+
     // 2. Configurar Middlewares
-    app.use(cors());
+    if (isProd) {
+      app.use(helmet());
+      app.set('trust proxy', 1);
+      app.use(rateLimit({ windowMs: 60_000, max: 100 }));
+      const origin = ENV.CORS_ORIGIN || undefined;
+      app.use(cors(origin ? { origin } : {}));
+    } else {
+      app.use(cors());
+    }
+
     app.use(express.json());
     
     // Middleware para serializar fechas consistentemente en UTC (opcional)
@@ -63,10 +76,43 @@ const startServer = async () => {
     // 4. Configurar Error Handler (al final)
     app.use(errorHandler);
 
+    // health endpoints
+    app.get('/health', (_req, res) => res.status(200).send({ status: 'ok' }));
+    app.get('/ready', (_req, res) => {
+      try {
+        const ds = DatabaseService.getDataSource();
+        return res.status(200).send({ ready: ds.isInitialized });
+      } catch (e) {
+        return res.status(503).send({ ready: false });
+      }
+    });
+
     // 5. Iniciar el servidor
-    app.listen(ENV.PORT, () => {
+    const server = app.listen(ENV.PORT, () => {
       console.log(`🚀 Servidor corriendo en http://localhost:${ENV.PORT}`);
     });
+
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      console.log(`Received ${signal}. Shutting down gracefully...`);
+      try {
+        await DatabaseService.shutdown();
+      } catch (e) {
+        console.warn('Error during database shutdown:', e);
+      }
+      server.close(() => {
+        console.log('HTTP server closed.');
+        process.exit(0);
+      });
+      // Force exit after 10s
+      setTimeout(() => {
+        console.error('Forcing shutdown.');
+        process.exit(1);
+      }, 10_000).unref();
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 
   } catch (error) {
     console.error("❌ Error initializing the application:", error);

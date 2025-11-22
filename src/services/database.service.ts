@@ -1,5 +1,5 @@
 import { DataSource } from "typeorm";
-import { PostgreSQLDataSource } from "@config/typeorm.config";
+import { createAndInitializeDataSource } from "@config/typeorm.config";
 
 export class DatabaseService {
   private static dataSource: DataSource;
@@ -10,7 +10,7 @@ export class DatabaseService {
    */
   static async initialize(): Promise<DataSource> {
     try {
-      this.dataSource = await PostgreSQLDataSource.initialize();
+      this.dataSource = await createAndInitializeDataSource();
       console.log("🌿 Database connection established successfully.");
       return this.dataSource;
     } catch (error) {
@@ -28,5 +28,19 @@ export class DatabaseService {
       throw new Error("Database connection is not initialized or has been lost.");
     }
     return this.dataSource;
+  }
+
+  /**
+   * Gracefully destroy the DataSource connection if initialized.
+   */
+  static async shutdown(): Promise<void> {
+    if (this.dataSource && this.dataSource.isInitialized) {
+      try {
+        await this.dataSource.destroy();
+        console.log('🌿 Database connection closed.');
+      } catch (e) {
+        console.warn('Error while closing database connection:', e);
+      }
+    }
   }
 }

@@ -59,4 +59,5 @@ export const ENV = {
         );
       return undefined;
     })(),
+  CORS_ORIGIN: process.env.CORS_ORIGIN || undefined,
 };

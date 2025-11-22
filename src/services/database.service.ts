@@ -29,4 +29,18 @@ export class DatabaseService {
     }
     return this.dataSource;
   }
+
+  /**
+   * Gracefully destroy the DataSource connection if initialized.
+   */
+  static async shutdown(): Promise<void> {
+    if (this.dataSource && this.dataSource.isInitialized) {
+      try {
+        await this.dataSource.destroy();
+        console.log('🌿 Database connection closed.');
+      } catch (e) {
+        console.warn('Error while closing database connection:', e);
+      }
+    }
+  }
 }
